@@ -10,7 +10,7 @@ Texto = Annotated[str, BeforeValidator(lambda value: required_text(value, "El ca
 class OperadorCrear(BaseModel):
     model_config = ConfigDict(extra="forbid")
     nombre: Texto
-    telefono: Texto
+    telefono: Texto | None = None
 
 
 class OperadorActualizar(BaseModel):

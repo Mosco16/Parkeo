@@ -79,10 +79,14 @@ class Operador(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     nombre: Mapped[str] = mapped_column(Text, nullable=False)
-    telefono: Mapped[str] = mapped_column(Text, nullable=False)
+    telefono: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     @validates("nombre", "telefono")
-    def validate_text(self, key: str, value: str) -> str:
+    def validate_text(self, key: str, value: str | None) -> str | None:
+        if value is None:
+            if key == "telefono":
+                return None
+            raise ValueError("nombre debe ser texto no vacío.")
         return required_text(value, key)
 
 
