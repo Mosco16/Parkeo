@@ -15,6 +15,7 @@ describe('Gestión de vehículos', () => {
       marca: 'Prueba',
       modelo: '2025',
       color: 'Azul',
+      fecha_vencimiento: '2027-01-31',
     })) {
       const input = root.querySelector<HTMLInputElement>(`#${field}`)!;
       input.value = value;
@@ -28,6 +29,7 @@ describe('Gestión de vehículos', () => {
       .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     const request = http.expectOne({ method: 'POST', url: '/vehiculos' });
     expect(request.request.body.modelo).toBe(2025);
+    expect(request.request.body.fecha_vencimiento).toBe('2027-01-31');
     request.flush({ ...vehicle, placa: 'DOM123' });
     flushList([{ ...vehicle, placa: 'DOM123' }]);
   });
@@ -41,6 +43,7 @@ describe('Gestión de vehículos', () => {
     color: 'Azul',
     modelo: 2025,
     tipo: 'MOTO',
+    fecha_vencimiento: '2027-01-31',
   };
   const flushList = (items: Vehiculo[] = [], total = items.length, offset = 0) => {
     http
@@ -81,7 +84,33 @@ describe('Gestión de vehículos', () => {
     component.save();
     expect(component.fieldError('placa')).toContain('obligatorio');
     expect(component.fieldError('modelo')).toContain('entero');
+    expect(component.fieldError('fecha_vencimiento')).toContain('obligatorio');
     http.expectNone((request) => request.method === 'POST');
+  });
+
+  it('rechaza una fecha de vencimiento que no existe en el calendario', () => {
+    flushList();
+    component.newVehicle();
+    component.form.patchValue({ ...vehicle, fecha_vencimiento: '2027-02-30' });
+    component.save();
+    expect(component.fieldError('fecha_vencimiento')).toContain('fecha válida');
+    http.expectNone((request) => request.method === 'POST');
+  });
+
+  it('calcula el vencimiento en hora de Bogotá y muestra la fecha local', () => {
+    const hoy = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+    const [anio, mes, dia] = hoy.split('-').map(Number);
+    const siguiente = new Date(anio, mes - 1, dia + 1);
+    const manana = `${siguiente.getFullYear()}-${String(siguiente.getMonth() + 1).padStart(2, '0')}-${String(siguiente.getDate()).padStart(2, '0')}`;
+
+    expect(component.estadoMensualidad(hoy)).toBe('VENCIDA');
+    expect(component.estadoMensualidad(manana)).toBe('VIGENTE');
+    expect(component.fechaLocal('2027-01-31')).toBe('31/01/2027');
   });
 
   it('crea con placa normalizada, bloquea doble envío y actualiza el listado', () => {

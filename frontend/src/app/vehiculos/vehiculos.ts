@@ -17,6 +17,15 @@ const year: ValidatorFn = (control) =>
   Number.isInteger(control.value) && control.value >= 1 && control.value <= 9999
     ? null
     : { year: true };
+const fecha: ValidatorFn = (control) => {
+  const valor = control.value;
+  if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return { fecha: true };
+  const [anio, mes, dia] = valor.split('-').map(Number);
+  const fecha = new Date(anio, mes - 1, dia);
+  return fecha.getFullYear() === anio && fecha.getMonth() === mes - 1 && fecha.getDate() === dia
+    ? null
+    : { fecha: true };
+};
 type Field = keyof VehiculoCrear;
 
 @Component({
@@ -46,6 +55,7 @@ export class Vehiculos {
       Validators.required,
       (control) => (this.types.includes(control.value) ? null : { type: true }),
     ]),
+    fecha_vencimiento: this.fb.nonNullable.control('', [Validators.required, fecha]),
   });
   readonly items = signal<Vehiculo[]>([]);
   readonly total = signal(0);
@@ -139,6 +149,7 @@ export class Vehiculos {
     if (control.errors['required']) return 'Este campo es obligatorio y no puede estar vacío.';
     if (field === 'modelo') return 'Introduce un año entero entre 1 y 9999.';
     if (field === 'tipo') return 'Selecciona un tipo válido.';
+    if (field === 'fecha_vencimiento') return 'Introduce una fecha válida (AAAA-MM-DD).';
     return 'Revisa este campo.';
   }
 
@@ -156,6 +167,7 @@ export class Vehiculos {
       marca: value.marca.trim(),
       modelo: value.modelo!,
       tipo: value.tipo as TipoVehiculo,
+      fecha_vencimiento: value.fecha_vencimiento,
     };
     this.form.controls.placa.setValue(payload.placa);
     this.saving.set(true);
@@ -191,6 +203,31 @@ export class Vehiculos {
         }
       },
     });
+  }
+
+  /** Fecha local (sin desfase de zona horaria) para mostrar en el listado. */
+  fechaLocal(iso: string): string {
+    const [anio, mes, dia] = iso.split('-').map(Number);
+    if (!anio || !mes || !dia) return iso;
+    return new Date(anio, mes - 1, dia).toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  /** RN-VIG-02: la mensualidad vence al terminar el día anterior a la fecha. */
+  estadoMensualidad(iso: string): 'VIGENTE' | 'VENCIDA' {
+    return this.hoyBogota() < iso ? 'VIGENTE' : 'VENCIDA';
+  }
+
+  private hoyBogota(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
   }
 
   private setFieldError(field: Field, message: string): void {

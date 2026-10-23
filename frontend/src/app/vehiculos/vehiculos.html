@@ -71,6 +71,20 @@
               </select>
               <span class="field-error" id="tipo-error">{{ fieldError('tipo') }}</span>
             </div>
+            <div class="field">
+              <label for="fecha_vencimiento">Vence la mensualidad</label>
+              <input
+                id="fecha_vencimiento"
+                type="date"
+                formControlName="fecha_vencimiento"
+                [attr.aria-invalid]="!!fieldError('fecha_vencimiento')"
+                aria-describedby="fecha_vencimiento-error"
+                required
+              />
+              <span class="field-error" id="fecha_vencimiento-error">{{
+                fieldError('fecha_vencimiento')
+              }}</span>
+            </div>
           </div>
           <div class="actions">
             <button class="primary" type="submit">
@@ -140,6 +154,7 @@
               <th scope="col">Año</th>
               <th scope="col">Color</th>
               <th scope="col">Tipo</th>
+              <th scope="col">Vencimiento</th>
               <th scope="col">Acciones</th>
             </tr>
           </thead>
@@ -152,6 +167,12 @@
                 <td>{{ vehicle.color }}</td>
                 <td>
                   <span class="type-tag">{{ vehicle.tipo }}</span>
+                </td>
+                <td>
+                  <span class="month-tag" [class.expired]="estadoMensualidad(vehicle.fecha_vencimiento) === 'VENCIDA'">
+                    {{ estadoMensualidad(vehicle.fecha_vencimiento) }}
+                  </span>
+                  <small class="month-date">{{ fechaLocal(vehicle.fecha_vencimiento) }}</small>
                 </td>
                 <td class="row-actions">
                   <button

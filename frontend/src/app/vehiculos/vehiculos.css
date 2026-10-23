@@ -231,3 +231,23 @@ thead th {
     padding-top: 28px;
   }
 }
+
+.month-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e3ece5;
+  color: #214c43;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+.month-tag.expired {
+  background: #fbe6e2;
+  color: #9b2c14;
+}
+.month-date {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.7;
+}
