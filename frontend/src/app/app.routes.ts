@@ -15,6 +15,13 @@ export const routes: Routes = [
     loadComponent: () => import('./control-acceso/control-acceso').then((m) => m.ControlAcceso),
   },
   {
+    path: 'salida',
+    title: 'Registrar salida | Autos Colombia',
+    canActivate: [operadorActivo],
+    loadComponent: () =>
+      import('./registrar-salida/registrar-salida').then((m) => m.RegistrarSalida),
+  },
+  {
     path: 'gestion/operadores',
     title: 'Operadores | Autos Colombia',
     loadComponent: () => import('./operadores/operadores').then((m) => m.Operadores),

@@ -1,0 +1,91 @@
+<section class="management" aria-labelledby="exit-title">
+  <header class="heading">
+    <div>
+      <span class="eyebrow">AUTOS COLOMBIA</span>
+      <h1 id="exit-title">Registrar salida</h1>
+      <p>Consulta la placa, revisa la estancia abierta y confirma la salida.</p>
+    </div>
+  </header>
+
+  @if (operador(); as activo) {
+    <p class="operator-line">Operador en turno: <strong>{{ activo.nombre }}</strong></p>
+  }
+
+  <section class="panel" aria-label="Consulta de placa">
+    <form [formGroup]="consulta" (ngSubmit)="buscar()">
+      <fieldset [disabled]="busy()">
+        <legend class="sr-only">Consulta del vehículo</legend>
+        <div class="form-grid">
+          <div class="field">
+            <label for="exit-plate">Placa</label>
+            <input
+              id="exit-plate"
+              type="text"
+              formControlName="placa"
+              autocomplete="off"
+              aria-describedby="exit-plate-error"
+            />
+            <span id="exit-plate-error" class="field-error">
+              @if (consulta.controls.placa.touched && consulta.controls.placa.invalid) {
+                La placa es obligatoria y no puede estar vacía.
+              }
+            </span>
+          </div>
+        </div>
+        <button type="submit" class="primary" [disabled]="busy()">Consultar vehículo</button>
+      </fieldset>
+    </form>
+  </section>
+
+  @if (querying()) {
+    <p role="status" class="notice">Consultando vehículo…</p>
+  }
+
+  @if (estado(); as state) {
+    <section class="panel vehicle-card" aria-labelledby="summary-title">
+      <h2 id="summary-title">{{ state.vehiculo.placa }}</h2>
+      <dl class="readonly">
+        <div>
+          <dt>Celda</dt>
+          <dd>{{ state.estancia?.celda?.codigo ?? 'Sin estancia abierta' }}</dd>
+        </div>
+        <div>
+          <dt>Entrada</dt>
+          <dd>{{ state.estancia ? fecha(state.estancia.entrada) : '—' }}</dd>
+        </div>
+        <div>
+          <dt>Mensualidad</dt>
+          <dd>
+            <span class="month-tag" [class.expired]="state.mensualidad === 'VENCIDA'">{{
+              state.mensualidad
+            }}</span>
+            <small>Vence {{ vence(state.vehiculo.fecha_vencimiento) }}</small>
+          </dd>
+        </div>
+      </dl>
+
+      @if (!state.esta_dentro || !state.estancia) {
+        <p class="notice error" role="alert">El vehículo no tiene una entrada abierta.</p>
+        <button type="button" (click)="irAEntrada()">Registrar primero la entrada</button>
+      } @else {
+        @if (state.mensualidad === 'VENCIDA') {
+          <p class="notice" role="status">
+            La mensualidad está vencida, pero la salida se registra igual.
+          </p>
+        }
+        <button type="button" class="primary" (click)="confirmarSalida()" [disabled]="busy()">
+          Confirmar salida
+        </button>
+      }
+    </section>
+  }
+
+  @if (errorConsulta()) {
+    <p class="notice error" role="alert">{{ errorConsulta() }}</p>
+  }
+  @if (exitoSalida()) {
+    <p class="notice success" role="status">{{ exitoSalida() }}</p>
+  }
+
+  <p class="hint">Fechas mostradas en America/Bogota. La fecha y hora las asigna el servidor.</p>
+</section>
