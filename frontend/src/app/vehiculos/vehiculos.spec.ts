@@ -98,6 +98,7 @@ describe('Gestión de vehículos', () => {
   });
 
   it('calcula el vencimiento en hora de Bogotá y muestra la fecha local', () => {
+    flushList();
     const hoy = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Bogota',
       year: 'numeric',
