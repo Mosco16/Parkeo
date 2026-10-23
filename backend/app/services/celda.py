@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.models import Celda
+from app.models import Celda, Estancia
 from app.schemas.celda import CeldaActualizar, CeldaCrear
 
 
@@ -16,6 +16,7 @@ class CeldaError(Exception):
 
 def database_operation(operation):
     """Centraliza rollback y mensajes públicos sin detalles del driver."""
+
     @wraps(operation)
     def wrapped(session: Session, *args, **kwargs):
         try:
@@ -34,6 +35,7 @@ def database_operation(operation):
         except SQLAlchemyError:
             session.rollback()
             raise CeldaError(503, "No se pudo completar la operación con la base de datos.") from None
+
     return wrapped
 
 
@@ -82,3 +84,18 @@ def delete_cell(session: Session, cell_id: int) -> None:
     session.commit()
 
 
+def disponibilidad(session: Session) -> dict:
+    # RN-CEL-03: el estado se calcula, nunca se guarda.
+    subq_abierta = select(Estancia.celda_id).where(Estancia.salida.is_(None)).distinct().subquery()
+    celdas = list(session.scalars(select(Celda).order_by(func.length(Celda.codigo), Celda.codigo)))
+    ocupadas = set(session.scalars(select(subq_abierta.c.celda_id)))
+    items = []
+    cupo = {"AUTO": {"total": 0, "libres": 0}, "MOTO": {"total": 0, "libres": 0}}
+    for celda in celdas:
+        estado = "OCUPADA" if celda.id in ocupadas else "LIBRE"
+        items.append({"id": celda.id, "codigo": celda.codigo, "tipo": celda.tipo, "estado": estado})
+        if celda.tipo in cupo:
+            cupo[celda.tipo]["total"] += 1
+            if estado == "LIBRE":
+                cupo[celda.tipo]["libres"] += 1
+    return {"celdas": items, "cupo": cupo}

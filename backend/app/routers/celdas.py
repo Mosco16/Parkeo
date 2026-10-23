@@ -4,12 +4,17 @@ from fastapi import APIRouter, Depends, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_session
-from app.schemas.celda import CeldaActualizar, CeldaCrear, CeldaRespuesta, CeldasPagina
+from app.schemas.celda import CeldaActualizar, CeldaCrear, CeldaRespuesta, CeldasPagina, DisponibilidadRespuesta
 from app.services import celda as service
 
 router = APIRouter(prefix="/celdas", tags=["Celdas"])
 DatabaseSession = Annotated[Session, Depends(get_session)]
 CellId = Annotated[int, Path(ge=1, le=9223372036854775807)]
+
+
+@router.get("/disponibilidad", response_model=DisponibilidadRespuesta)
+def disponibilidad(session: DatabaseSession):
+    return service.disponibilidad(session)
 
 
 @router.post("", response_model=CeldaRespuesta, status_code=201)
@@ -40,4 +45,5 @@ def update(id: CellId, data: CeldaActualizar, session: DatabaseSession):
 def delete(id: CellId, session: DatabaseSession) -> Response:
     service.delete_cell(session, id)
     return Response(status_code=204)
+
 
