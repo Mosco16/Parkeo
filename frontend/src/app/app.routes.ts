@@ -9,6 +9,12 @@ export const routes: Routes = [
       import('./seleccion-operador/seleccion-operador').then((m) => m.SeleccionOperador),
   },
   {
+    path: 'tablero',
+    title: 'Tablero | Autos Colombia',
+    canActivate: [operadorActivo],
+    loadComponent: () => import('./tablero/tablero').then((m) => m.Tablero),
+  },
+  {
     path: 'control-acceso',
     title: 'Registrar entrada | Autos Colombia',
     canActivate: [operadorActivo],

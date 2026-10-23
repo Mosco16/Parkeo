@@ -38,7 +38,7 @@ describe('Selección de operador', () => {
     expect(sessionStorage.getItem('autos-colombia.operador')).toBeNull();
   });
 
-  it('inicia el turno y navega al control de acceso', () => {
+  it('inicia el turno y navega al tablero', () => {
     const fixture = crear();
     const router = TestBed.inject(Router);
     const navegar = vi.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -46,7 +46,7 @@ describe('Selección de operador', () => {
     fixture.componentInstance.elegir(4);
     fixture.componentInstance.iniciarTurno();
 
-    expect(navegar).toHaveBeenCalledWith(['/control-acceso']);
+    expect(navegar).toHaveBeenCalledWith(['/tablero']);
     expect(sessionStorage.getItem('autos-colombia.operador')).toContain('Ana');
   });
 });

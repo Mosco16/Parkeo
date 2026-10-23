@@ -69,6 +69,6 @@ export class SeleccionOperador {
       return;
     }
     this.sesion.iniciar(operador);
-    void this.router.navigate(['/control-acceso']);
+    void this.router.navigate(['/tablero']);
   }
 }

@@ -1,0 +1,83 @@
+<section class="management" aria-labelledby="board-title">
+  <header class="heading">
+    <div>
+      <span class="eyebrow">ESTADO DEL PARQUEADERO</span>
+      <h1 id="board-title">Tablero de celdas</h1>
+      <p>Disponibilidad de las celdas y consulta rápida por placa.</p>
+    </div>
+    <button type="button" (click)="cargar()" [disabled]="loading()">Actualizar tablero</button>
+  </header>
+
+  @if (cupo()) {
+    <div class="cupo" aria-label="Cupo por tipo de vehículo">
+      <span><strong>Autos:</strong> {{ cupoTexto('AUTO') }}</span>
+      <span><strong>Motos:</strong> {{ cupoTexto('MOTO') }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <p role="status" class="notice">Cargando celdas…</p>
+  } @else if (error()) {
+    <p role="alert" class="notice error">{{ error() }}</p>
+  } @else if (!celdas().length) {
+    <p class="notice">Todavía no hay celdas registradas.</p>
+  } @else {
+    <ul class="grid" aria-label="Celdas del parqueadero">
+      @for (celda of celdas(); track celda.id) {
+        <li
+          class="cell"
+          [class.taken]="celda.estado === 'OCUPADA'"
+          [attr.aria-label]="celda.codigo + ': ' + (celda.estado === 'LIBRE' ? 'libre' : 'ocupada')"
+        >
+          <strong>{{ celda.codigo }}</strong>
+          <span class="state">{{ celda.estado === 'LIBRE' ? 'Libre' : 'Ocupada' }}</span>
+        </li>
+      }
+    </ul>
+  }
+
+  <section class="panel" aria-labelledby="query-title">
+    <h2 id="query-title">Consultar placa</h2>
+    <form [formGroup]="consulta" (ngSubmit)="buscar()">
+      <fieldset [disabled]="querying()">
+        <legend class="sr-only">Consulta por placa</legend>
+        <div class="form-grid">
+          <div class="field">
+            <label for="board-plate">Placa</label>
+            <input
+              id="board-plate"
+              type="text"
+              formControlName="placa"
+              autocomplete="off"
+              aria-describedby="board-plate-error"
+            />
+            <span id="board-plate-error" class="field-error">
+              @if (consulta.controls.placa.touched && consulta.controls.placa.invalid) {
+                La placa es obligatoria y no puede estar vacía.
+              }
+            </span>
+          </div>
+        </div>
+        <button type="submit" class="primary" [disabled]="querying()">Consultar</button>
+      </fieldset>
+    </form>
+
+    @if (querying()) {
+      <p role="status">Consultando vehículo…</p>
+    }
+    @if (estado(); as state) {
+      <p class="result" role="status">
+        <strong>{{ state.vehiculo.placa }}</strong>
+        <span class="tag" [class.inside]="state.esta_dentro">{{
+          state.esta_dentro ? 'DENTRO' : 'FUERA'
+        }}</span>
+        <span class="tag" [class.expired]="state.mensualidad === 'VENCIDA'">{{
+          state.mensualidad
+        }}</span>
+      </p>
+    }
+    @if (errorConsulta()) {
+      <p role="alert" class="notice error">{{ errorConsulta() }}</p>
+    }
+  </section>
+</section>
