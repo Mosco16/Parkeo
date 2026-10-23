@@ -23,7 +23,7 @@ def client():
         transaction = connection.begin()
         try:
             assert connection.scalar(text("SELECT current_database()")) == "autos_colombia"
-            assert connection.scalar(text("SELECT version_num FROM alembic_version")) in {"0001", "0002"}
+            assert connection.scalar(text("SELECT version_num FROM alembic_version")) in {"0003", "0004"}
             with Session(bind=connection, join_transaction_mode="create_savepoint") as session:
                 def override_session():
                     yield session
@@ -40,7 +40,7 @@ def client():
 def test_crud_and_errors_in_postgres(client):
     suffix = uuid4().hex[:12].upper()
     payload = {"placa": f" test-{suffix} ", "color": "Azul", "modelo": 2025,
-               "marca": "Prueba", "tipo": "AUTOMOVIL"}
+               "marca": "Prueba", "tipo": "AUTOMOVIL", "fecha_vencimiento": "2027-01-31"}
     created = client.post("/vehiculos", json=payload)
     assert created.status_code == 201
     vehicle = created.json()

@@ -35,10 +35,10 @@ def test_celda_schema_and_constraints(connection):
     assert inspector.get_pk_constraint('celda')['constrained_columns'] == ['id']
     assert any(c['column_names'] == ['codigo'] for c in inspector.get_unique_constraints('celda'))
     code = 'SCHEMA-' + uuid4().hex.upper()
-    connection.execute(text('INSERT INTO celda(codigo,tipo) VALUES (:code,:type)'), {'code':code,'type':'Libre'})
-    for code_value, kind, state in [(code,'Otro','23505'), (' lowercase ','Libre','23514'),
-                                    (' \t','Libre','23514'), (code+'X',' \t','23514'),
-                                    (None,'Libre','23502'), (code+'Y',None,'23502')]:
+    connection.execute(text('INSERT INTO celda(codigo,tipo) VALUES (:code,:type)'), {'code':code,'type':'AUTO'})
+    for code_value, kind, state in [(code,'MOTO','23505'), (' lowercase ','AUTO','23514'),
+                                    (' \t','AUTO','23514'), (code+'X',' \t','23514'),
+                                    (None,'AUTO','23502'), (code+'Y',None,'23502')]:
         with pytest.raises(IntegrityError) as error:
             with connection.begin_nested():
                 connection.execute(text('INSERT INTO celda(codigo,tipo) VALUES (:code,:type)'), {'code':code_value,'type':kind})
@@ -72,7 +72,7 @@ def test_crud_celdas(connection):
                 deleted = client.delete(path)
                 assert deleted.status_code == 204 and deleted.content == b''
                 assert client.get(path).status_code == 404
-                assert client.patch(path, json={'tipo':'Libre'}).status_code == 404
+                assert client.patch(path, json={'tipo':'AUTO'}).status_code == 404
                 assert client.delete(path).status_code == 404
                 assert client.get('/health').json() == {'status':'ok'}
         finally:

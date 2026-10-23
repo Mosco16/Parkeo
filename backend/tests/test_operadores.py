@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.database import get_session
 from app.main import app
 from app.models import Operador
+from app.schemas.operador import OperadorCrear
 
 
 @pytest.fixture
@@ -26,8 +27,12 @@ def api():
         app.dependency_overrides.pop(get_session, None)
 
 
-@pytest.mark.parametrize("field", ["nombre", "telefono"])
-@pytest.mark.parametrize("value", [None, "", " \t\n", 123, True, []])
+@pytest.mark.parametrize("field,value", [
+    ("nombre", None),
+    ("nombre", ""), ("nombre", " \t\n"), ("nombre", 123), ("nombre", True), ("nombre", []),
+    # El teléfono es opcional: solo los valores enviados deben ser texto no vacío.
+    ("telefono", ""), ("telefono", " \t\n"), ("telefono", 123), ("telefono", True), ("telefono", []),
+])
 def test_invalid_fields_are_422_without_writes(api, field, value):
     client, session = api
     payload = {"nombre": "Prueba", "telefono": "001", field: value}
@@ -36,12 +41,16 @@ def test_invalid_fields_are_422_without_writes(api, field, value):
     session.commit.assert_not_called()
 
 
-@pytest.mark.parametrize("payload", [{}, {"nombre": "Prueba"}, {"telefono": "001"},
+@pytest.mark.parametrize("payload", [{}, {"telefono": "001"},
                                      {"nombre": "Prueba", "telefono": "001", "id": 1}])
 def test_creation_requires_fields_and_forbids_id(api, payload):
     client, session = api
     assert client.post("/operadores", json=payload).status_code == 422
     session.commit.assert_not_called()
+
+
+def test_telefono_no_es_obligatorio():
+    assert OperadorCrear(nombre="Prueba").telefono is None
 
 
 def test_patch_forbids_id_and_unknown_fields(api):

@@ -9,7 +9,7 @@ from app.schemas.vehiculo import VehiculoActualizar, VehiculoCrear
 from app.services.vehiculo import VehiculoError, delete_vehicle
 
 
-@pytest.mark.parametrize("field", ["placa", "color", "modelo", "marca", "tipo"])
+@pytest.mark.parametrize("field", ["placa", "color", "modelo", "marca", "tipo", "fecha_vencimiento"])
 def test_patch_rejects_explicit_null(field):
     with pytest.raises(ValidationError):
         VehiculoActualizar(**{field: None})
@@ -31,6 +31,13 @@ def test_patch_only_supplied_fields_and_no_id():
 def test_creation_requires_every_field():
     with pytest.raises(ValidationError):
         VehiculoCrear(placa="ABC123")
+
+
+def test_creation_requires_fecha_vencimiento():
+    with pytest.raises(ValidationError):
+        VehiculoCrear(placa="ABC123", color="Azul", modelo=2025, marca="Marca", tipo="MOTO")
+    assert VehiculoCrear(placa="ABC123", color="Azul", modelo=2025, marca="Marca",
+                         tipo="MOTO", fecha_vencimiento="2027-01-31").fecha_vencimiento.isoformat() == "2027-01-31"
 
 
 def test_delete_foreign_key_conflict_rolls_back_without_related_deletes():
