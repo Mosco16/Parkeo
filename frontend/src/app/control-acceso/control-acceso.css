@@ -293,3 +293,18 @@ thead th {
   font-size: 24px;
   color: #214c43;
 }
+.confirm {
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid #d8b3a6;
+  border-radius: 12px;
+  background: #fff8f4;
+}
+.confirm p {
+  margin: 0 0 10px;
+}
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

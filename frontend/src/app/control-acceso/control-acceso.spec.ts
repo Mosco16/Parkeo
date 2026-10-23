@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { ControlAcceso } from './control-acceso';
 import { SesionOperador } from '../services/sesion-operador.service';
 
@@ -119,5 +119,118 @@ describe('Registrar entrada', () => {
   it('presenta el mismo instante en hora de Bogotá', () => {
     expect(c.fecha('2026-10-19T15:00:00Z')).toBe(c.fecha('2026-10-19T10:00:00-05:00'));
     expect(c.fecha('2026-10-19T15:00:00Z')).toContain('10:00:00');
+  });
+
+  it('cierra la estancia anterior y registra la entrada con una salida y una entrada normales', () => {
+    consultar(dentro);
+    c.abrirConfirmacion();
+    expect(c.confirmando()).toBe(true);
+
+    c.corregirEntrada();
+    expect(c.confirmando()).toBe(false);
+    const salida = http.expectOne('/estancias/salida');
+    expect(salida.request.body).toEqual({ placa: 'ABC123', operador_id: 4 });
+    salida.flush({
+      ...dentro.estancia,
+      salida: '2026-10-19T22:00:00Z',
+      operador_salida_id: 4,
+    });
+    expect(c.aviso()).toBe('Estancia cerrada.');
+
+    http.expectOne('/estancias/vehiculo/ABC123').flush(fuera);
+    const entrada = http.expectOne('/estancias/entrada');
+    expect(entrada.request.body).toEqual({ placa: 'ABC123', operador_id: 4 });
+    entrada.flush({ ...dentro.estancia, id: 9, celda });
+    expect(c.exitoEntrada()).toContain('Estancia cerrada.');
+    expect(c.exitoEntrada()).toContain('Entrada registrada');
+    http.expectNone('/estancias/salida');
+  });
+
+  it('avisa que la estancia anterior ya quedó cerrada si falla la entrada nueva', () => {
+    consultar(dentro);
+    c.abrirConfirmacion();
+    c.corregirEntrada();
+    http.expectOne('/estancias/salida').flush({
+      ...dentro.estancia,
+      salida: '2026-10-19T22:00:00Z',
+      operador_salida_id: 4,
+    });
+    http.expectOne('/estancias/vehiculo/ABC123').flush(fuera);
+    http.expectOne('/estancias/entrada').error(new ProgressEvent('error'));
+    expect(c.errorConsulta()).toContain('La estancia anterior ya quedó cerrada');
+  });
+
+  it('cancela la confirmación sin cerrar la estancia', () => {
+    consultar(dentro);
+    c.abrirConfirmacion();
+    c.cancelarConfirmacion();
+    expect(c.confirmando()).toBe(false);
+    http.expectNone('/estancias/salida');
+  });
+});
+
+describe('Registrar entrada desde la salida', () => {
+  let http: HttpTestingController;
+  const celda = { id: 2, codigo: 'A1', tipo: 'AUTO' };
+  const estancia = {
+    id: 3,
+    vehiculo_id: 1,
+    celda_id: 2,
+    entrada: '2026-10-19T15:00:00Z',
+    salida: null,
+    operador_entrada_id: 4,
+    operador_salida_id: null,
+    celda,
+  };
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    TestBed.configureTestingModule({
+      imports: [ControlAcceso],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({ placa: 'abc123', volver: 'salida' }),
+            },
+          },
+        },
+      ],
+    });
+    TestBed.inject(SesionOperador).iniciar({ id: 4, nombre: 'Ana', telefono: '001' });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('carga la placa de la URL y vuelve a la salida al registrar la entrada', () => {
+    const router = TestBed.inject(Router);
+    const navegar = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const c = TestBed.createComponent(ControlAcceso).componentInstance;
+    expect(c.consulta.controls.placa.value).toBe('ABC123');
+
+    http.expectOne('/estancias/vehiculo/ABC123').flush({
+      vehiculo: {
+        id: 1,
+        placa: 'ABC123',
+        marca: 'Renault',
+        color: 'Azul',
+        modelo: 2026,
+        tipo: 'AUTOMOVIL',
+        fecha_vencimiento: '2027-01-31',
+      },
+      esta_dentro: false,
+      estancia: null,
+      mensualidad: 'VIGENTE',
+      celda_sugerida: celda,
+    });
+    c.confirmarEntrada();
+    http.expectOne('/estancias/entrada').flush(estancia);
+
+    expect(navegar).toHaveBeenCalledWith(['/salida'], { queryParams: { placa: 'ABC123' } });
   });
 });

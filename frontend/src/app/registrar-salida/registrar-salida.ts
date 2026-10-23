@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EstadoVehiculo } from '../models/estancia';
 import { EstanciasService } from '../services/estancias.service';
 import { SesionOperador } from '../services/sesion-operador.service';
@@ -24,6 +24,7 @@ export class RegistrarSalida {
   private readonly fb = inject(FormBuilder);
   private readonly destroy = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private version = 0;
 
   readonly operador = this.sesion.operador;
@@ -46,6 +47,12 @@ export class RegistrarSalida {
         this.errorConsulta.set('');
         this.exitoSalida.set('');
       });
+
+    const inicial = this.route.snapshot.queryParamMap.get('placa');
+    if (inicial) {
+      this.consulta.controls.placa.setValue(inicial.toUpperCase(), { emitEvent: false });
+      this.buscar();
+    }
   }
 
   buscar(): void {
@@ -105,7 +112,7 @@ export class RegistrarSalida {
 
   irAEntrada(): void {
     void this.router.navigate(['/control-acceso'], {
-      queryParams: { placa: placa(this.consulta.controls.placa.value) },
+      queryParams: { placa: placa(this.consulta.controls.placa.value), volver: 'salida' },
     });
   }
 

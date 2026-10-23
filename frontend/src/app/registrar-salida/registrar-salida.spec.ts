@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { RegistrarSalida } from './registrar-salida';
 import { SesionOperador } from '../services/sesion-operador.service';
 
@@ -89,7 +89,7 @@ describe('Registrar salida', () => {
     http.expectNone('/estancias/salida');
     c.irAEntrada();
     expect(navegar).toHaveBeenCalledWith(['/control-acceso'], {
-      queryParams: { placa: 'ABC123' },
+      queryParams: { placa: 'ABC123', volver: 'salida' },
     });
   });
 
@@ -110,5 +110,59 @@ describe('Registrar salida', () => {
     c.buscar();
     http.expectOne('/estancias/vehiculo/ABC123').error(new ProgressEvent('error'));
     expect(c.errorConsulta()).toContain('No se pudo conectar');
+  });
+});
+
+describe('Registrar salida después de la entrada', () => {
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    TestBed.configureTestingModule({
+      imports: [RegistrarSalida],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({ placa: 'abc123' }) } },
+        },
+      ],
+    });
+    TestBed.inject(SesionOperador).iniciar({ id: 4, nombre: 'Ana', telefono: '001' });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('carga la placa devuelta por la pantalla de entrada y consulta la estancia', () => {
+    const c = TestBed.createComponent(RegistrarSalida).componentInstance;
+    expect(c.consulta.controls.placa.value).toBe('ABC123');
+    http.expectOne('/estancias/vehiculo/ABC123').flush({
+      vehiculo: {
+        id: 1,
+        placa: 'ABC123',
+        marca: 'Renault',
+        color: 'Azul',
+        modelo: 2026,
+        tipo: 'AUTOMOVIL',
+        fecha_vencimiento: '2027-01-31',
+      },
+      esta_dentro: true,
+      estancia: {
+        id: 3,
+        vehiculo_id: 1,
+        celda_id: 2,
+        entrada: '2026-10-19T15:00:00Z',
+        salida: null,
+        operador_entrada_id: 4,
+        operador_salida_id: null,
+        celda: { id: 2, codigo: 'A1', tipo: 'AUTO' },
+      },
+      mensualidad: 'VIGENTE',
+      celda_sugerida: null,
+    });
+    expect(c.estado()?.esta_dentro).toBe(true);
   });
 });
