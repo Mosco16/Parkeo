@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, field_validator
@@ -22,6 +23,7 @@ class VehiculoCrear(BaseModel):
     modelo: Anio
     marca: Texto
     tipo: TipoVehiculo
+    fecha_vencimiento: date
 
 
 class VehiculoActualizar(BaseModel):
@@ -32,6 +34,7 @@ class VehiculoActualizar(BaseModel):
     modelo: Anio | None = None
     marca: Texto | None = None
     tipo: TipoVehiculo | None = None
+    fecha_vencimiento: date | None = None
 
     @field_validator("*", mode="before")
     @classmethod

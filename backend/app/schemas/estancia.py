@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -10,9 +10,10 @@ Identificador = Annotated[int, Field(strict=True, ge=1, le=9223372036854775807)]
 
 
 class EntradaCrear(BaseModel):
+    """RN-ENT-05: el operador no escoge la celda; la asigna el servicio."""
+
     model_config = ConfigDict(extra="forbid")
     placa: Placa
-    celda_id: Identificador
     operador_id: Identificador
 
 
@@ -20,6 +21,12 @@ class SalidaCrear(BaseModel):
     model_config = ConfigDict(extra="forbid")
     placa: Placa
     operador_id: Identificador
+
+
+class CambioCeldaCrear(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    placa: Placa
+    celda_id: Identificador
 
 
 class EstanciaRespuesta(BaseModel):
@@ -46,3 +53,5 @@ class EstadoVehiculoRespuesta(BaseModel):
     vehiculo: VehiculoRespuesta
     esta_dentro: bool
     estancia: EstanciaAbiertaRespuesta | None
+    mensualidad: Literal["VIGENTE", "VENCIDA"]
+    celda_sugerida: CeldaRespuesta | None = None

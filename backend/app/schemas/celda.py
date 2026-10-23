@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, field_validator
 
@@ -6,18 +6,19 @@ from app.models import required_text
 
 Texto = Annotated[str, BeforeValidator(lambda value: required_text(value, "El campo"))]
 Codigo = Annotated[Texto, AfterValidator(str.upper)]
+TipoCelda = Literal["AUTO", "MOTO"]
 
 
 class CeldaCrear(BaseModel):
     model_config = ConfigDict(extra="forbid")
     codigo: Codigo
-    tipo: Texto
+    tipo: TipoCelda
 
 
 class CeldaActualizar(BaseModel):
     model_config = ConfigDict(extra="forbid")
     codigo: Codigo | None = None
-    tipo: Texto | None = None
+    tipo: TipoCelda | None = None
 
     @field_validator("*", mode="before")
     @classmethod
@@ -37,3 +38,23 @@ class CeldasPagina(BaseModel):
     total: int
     offset: int
     limit: int
+
+
+class CeldaDisponible(BaseModel):
+    """RN-CEL-03: el estado se calcula, nunca se guarda."""
+
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+    id: int
+    codigo: str
+    tipo: TipoCelda
+    estado: Literal["LIBRE", "OCUPADA"]
+
+
+class CupoTipo(BaseModel):
+    total: int
+    libres: int
+
+
+class DisponibilidadRespuesta(BaseModel):
+    celdas: list[CeldaDisponible]
+    cupo: dict[str, CupoTipo]
