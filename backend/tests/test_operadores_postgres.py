@@ -26,7 +26,8 @@ def test_operadores_structure_and_crud():
             assert set(columns) == {"id", "nombre", "telefono"}
             assert str(columns["id"]["type"]) == "BIGINT"
             assert columns["id"]["identity"]["always"] is True
-            assert all(not c["nullable"] for c in columns.values())
+            assert columns["telefono"]["nullable"] is True
+            assert all(not c["nullable"] for name, c in columns.items() if name != "telefono")
             assert str(columns["nombre"]["type"]) == str(columns["telefono"]["type"]) == "TEXT"
             assert inspector.get_pk_constraint("operador")["constrained_columns"] == ["id"]
             assert not inspector.get_unique_constraints("operador")
