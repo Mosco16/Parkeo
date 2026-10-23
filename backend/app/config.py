@@ -8,6 +8,9 @@ from dotenv import dotenv_values
 
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 
+# RNF-04: toda decisión de negocio sobre fechas usa la zona horaria de Bogotá.
+ZONA_HORARIA = "America/Bogota"
+
 
 class ConfigurationError(ValueError):
     """Error que contiene únicamente nombres de variables, nunca sus valores."""

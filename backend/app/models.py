@@ -1,8 +1,8 @@
 """Modelos iniciales. Importar este módulo no crea tablas ni abre conexiones."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Identity, Index, Integer, Text, UniqueConstraint, func, text
+from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, ForeignKey, Identity, Index, Integer, Text, UniqueConstraint, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, validates
 
 
@@ -34,6 +34,7 @@ class Vehiculo(Base):
     modelo: Mapped[int] = mapped_column(Integer, nullable=False)
     marca: Mapped[str] = mapped_column(Text, nullable=False)
     tipo: Mapped[str] = mapped_column(Text, nullable=False)
+    fecha_vencimiento: Mapped[date] = mapped_column(Date, nullable=False)
 
     @validates("placa", "color", "marca", "tipo")
     def validate_text(self, key: str, value: str) -> str:
@@ -58,6 +59,7 @@ class Celda(Base):
         CheckConstraint("codigo ~ '[^[:space:]]'", name="ck_celda_codigo_no_vacio"),
         CheckConstraint("codigo = upper(regexp_replace(codigo, '^[[:space:]]+|[[:space:]]+$', '', 'g'))", name="ck_celda_codigo_normalizado"),
         CheckConstraint("tipo ~ '[^[:space:]]'", name="ck_celda_tipo_no_vacio"),
+        CheckConstraint("tipo IN ('AUTO', 'MOTO')", name="ck_celda_tipo"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
@@ -67,7 +69,11 @@ class Celda(Base):
     @validates("codigo", "tipo")
     def validate_text(self, key: str, value: str) -> str:
         value = required_text(value, key)
-        return value.upper() if key == "codigo" else value
+        if key == "codigo":
+            return value.upper()
+        if value not in {"AUTO", "MOTO"}:
+            raise ValueError("tipo debe ser AUTO o MOTO.")
+        return value
 
 
 class Operador(Base):
