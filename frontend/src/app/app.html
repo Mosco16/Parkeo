@@ -12,21 +12,30 @@
       }
     </div>
     <nav aria-label="Navegación principal">
-      <a routerLink="/control-acceso" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Control de acceso</a
-      >
-      <a routerLink="/gestion/operadores" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Operadores</a
-      >
-      <a routerLink="/gestion/celdas" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Celdas</a
-      >
       <a
         routerLink="/"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
         ariaCurrentWhenActive="page"
         >Inicio</a
+      >
+      <a routerLink="/tablero" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Tablero</a
+      >
+      <a routerLink="/control-acceso" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Registrar entrada</a
+      >
+      <a routerLink="/salida" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Registrar salida</a
+      >
+      <a routerLink="/cambiar-celda" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Cambiar celda</a
+      >
+      <a routerLink="/gestion/operadores" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Operadores</a
+      >
+      <a routerLink="/gestion/celdas" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Celdas</a
       >
       <a routerLink="/gestion/vehiculos" routerLinkActive="active" ariaCurrentWhenActive="page"
         >Vehículos</a
