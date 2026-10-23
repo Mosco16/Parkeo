@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { CeldasService } from '../services/celdas.service';
-import { Celda, CeldaCrear } from '../models/celda';
+import { Celda, CeldaCrear, TIPOS_CELDA, TipoCelda } from '../models/celda';
 import { ErrorApi } from '../models/vehiculo';
 
 const nonBlank: ValidatorFn = (control) =>
@@ -20,13 +20,14 @@ export class Celdas {
   private readonly api = inject(CeldasService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
-  readonly fields = [
-    { key: 'codigo' as const, label: 'Código' },
-    { key: 'tipo' as const, label: 'Tipo' },
-  ];
+  readonly types = TIPOS_CELDA;
+  readonly fields = [{ key: 'codigo' as const, label: 'Código' }];
   readonly form = this.fb.group({
     codigo: this.fb.nonNullable.control('', nonBlank),
-    tipo: this.fb.nonNullable.control('', nonBlank),
+    tipo: this.fb.nonNullable.control<TipoCelda | ''>('', [
+      Validators.required,
+      (control) => (this.types.includes(control.value) ? null : { type: true }),
+    ]),
   });
   readonly items = signal<Celda[]>([]);
   readonly total = signal(0);
@@ -118,6 +119,7 @@ export class Celdas {
     if (!control.touched || !control.errors) return '';
     if (control.errors['server']) return String(control.errors['server']);
     if (control.errors['required']) return 'Este campo es obligatorio y no puede estar vacío.';
+    if (field === 'tipo') return 'Selecciona un tipo válido.';
     return 'Revisa este campo.';
   }
 
@@ -131,7 +133,7 @@ export class Celdas {
     const value = this.form.getRawValue();
     const payload: CeldaCrear = {
       codigo: value.codigo.trim().toUpperCase(),
-      tipo: value.tipo.trim(),
+      tipo: value.tipo as TipoCelda,
     };
     this.form.controls.codigo.setValue(payload.codigo);
     this.saving.set(true);
