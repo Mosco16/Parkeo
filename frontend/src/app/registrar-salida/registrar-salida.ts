@@ -1,5 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+﻿import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,6 +6,7 @@ import { EstadoVehiculo } from '../models/estancia';
 import { EstanciasService } from '../services/estancias.service';
 import { SesionOperador } from '../services/sesion-operador.service';
 import { fechaBogota, fechaHoraBogota } from '../utils/fechas';
+import { mensajeApi } from '../utils/mensajes';
 
 const nonBlank: ValidatorFn = (c) =>
   typeof c.value === 'string' && c.value.trim() ? null : { required: true };
@@ -76,7 +76,7 @@ export class RegistrarSalida {
         },
         error: (error) => {
           this.querying.set(false);
-          if (version === this.version) this.errorConsulta.set(this.mensaje(error));
+          if (version === this.version) this.errorConsulta.set(mensajeApi(error));
         },
       });
   }
@@ -105,7 +105,7 @@ export class RegistrarSalida {
         error: (error) => {
           this.saving.set(false);
           this.estado.set(null);
-          this.errorConsulta.set(this.mensaje(error));
+          this.errorConsulta.set(mensajeApi(error));
         },
       });
   }
@@ -122,12 +122,5 @@ export class RegistrarSalida {
 
   vence(value: string): string {
     return fechaBogota(value);
-  }
-
-  mensaje(error: HttpErrorResponse): string {
-    if ([404, 409].includes(error.status) && typeof error.error?.detail === 'string')
-      return error.error.detail;
-    if (error.status === 422) return 'Datos inválidos. Revisa la placa e intenta de nuevo.';
-    return 'No se pudo conectar con el servicio. Consulta el vehículo antes de reintentar.';
   }
 }

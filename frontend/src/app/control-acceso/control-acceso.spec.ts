@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+﻿import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
@@ -113,7 +113,7 @@ describe('Registrar entrada', () => {
     c.consulta.controls.placa.setValue('ABC123');
     c.buscar();
     http.expectOne('/estancias/vehiculo/ABC123').error(new ProgressEvent('error'));
-    expect(c.errorConsulta()).toContain('No se pudo conectar');
+    expect(c.errorConsulta()).toContain('El servicio no está disponible');
   });
 
   it('presenta el mismo instante en hora de Bogotá', () => {

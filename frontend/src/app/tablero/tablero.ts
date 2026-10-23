@@ -1,11 +1,11 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+﻿import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
 import { CeldaDisponible, Disponibilidad, TipoCelda } from '../models/celda';
 import { EstadoVehiculo } from '../models/estancia';
 import { CeldasService } from '../services/celdas.service';
 import { EstanciasService } from '../services/estancias.service';
+import { mensajeApi } from '../utils/mensajes';
 
 const nonBlank: ValidatorFn = (c) =>
   typeof c.value === 'string' && c.value.trim() ? null : { required: true };
@@ -89,7 +89,7 @@ export class Tablero {
         },
         error: (error) => {
           this.querying.set(false);
-          if (version === this.version) this.errorConsulta.set(this.mensaje(error));
+          if (version === this.version) this.errorConsulta.set(mensajeApi(error));
         },
       });
   }
@@ -100,10 +100,4 @@ export class Tablero {
     return `${valor.libres} libres de ${valor.total}`;
   }
 
-  private mensaje(error: HttpErrorResponse): string {
-    if ([404, 409].includes(error.status) && typeof error.error?.detail === 'string')
-      return error.error.detail;
-    if (error.status === 422) return 'Datos inválidos. Revisa la placa e intenta de nuevo.';
-    return 'No se pudo conectar con el servicio. Intenta de nuevo.';
-  }
 }

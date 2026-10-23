@@ -1,5 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+﻿import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
 import { CeldaDisponible, TipoCelda } from '../models/celda';
@@ -8,6 +7,7 @@ import { TipoVehiculo } from '../models/vehiculo';
 import { CeldasService } from '../services/celdas.service';
 import { EstanciasService } from '../services/estancias.service';
 import { fechaHoraBogota } from '../utils/fechas';
+import { mensajeApi } from '../utils/mensajes';
 
 const nonBlank: ValidatorFn = (c) =>
   typeof c.value === 'string' && c.value.trim() ? null : { required: true };
@@ -87,7 +87,7 @@ export class CambiarCelda {
         },
         error: (error) => {
           this.querying.set(false);
-          if (version === this.version) this.errorConsulta.set(this.mensaje(error));
+          if (version === this.version) this.errorConsulta.set(mensajeApi(error));
         },
       });
   }
@@ -144,7 +144,7 @@ export class CambiarCelda {
         },
         error: (error) => {
           this.saving.set(false);
-          this.errorAccion.set(this.mensaje(error));
+          this.errorAccion.set(mensajeApi(error));
           if (error.status === 409) this.cargarOpciones();
         },
       });
@@ -152,12 +152,5 @@ export class CambiarCelda {
 
   fecha(value: string): string {
     return fechaHoraBogota(value);
-  }
-
-  private mensaje(error: HttpErrorResponse): string {
-    if ([404, 409].includes(error.status) && typeof error.error?.detail === 'string')
-      return error.error.detail;
-    if (error.status === 422) return 'Datos inválidos. Revisa la celda e intenta de nuevo.';
-    return 'No se pudo conectar con el servicio. Intenta de nuevo.';
   }
 }
