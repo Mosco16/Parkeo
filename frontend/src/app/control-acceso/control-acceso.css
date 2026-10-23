@@ -231,3 +231,65 @@ thead th {
     padding-top: 28px;
   }
 }
+
+.operator-line {
+  font-size: 14px;
+  color: #365c4e;
+  margin: 0 0 18px;
+}
+.vehicle-card h2 {
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  margin-bottom: 16px;
+}
+.readonly {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 0 0 20px;
+  padding: 16px;
+  background: #f6f8f4;
+  border-radius: 12px;
+}
+.readonly dt {
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  color: #5d7063;
+  text-transform: uppercase;
+}
+.readonly dd {
+  margin: 6px 0 0;
+  font-size: 16px;
+}
+.readonly small {
+  display: block;
+  margin-top: 4px;
+  color: #586b60;
+}
+.month-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e3ece5;
+  color: #214c43;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+.month-tag.expired {
+  background: #fbe6e2;
+  color: #9b2c14;
+}
+.suggested {
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px dashed #9fb8a8;
+  border-radius: 12px;
+}
+.suggested p {
+  margin: 6px 0;
+}
+.suggested strong {
+  font-size: 24px;
+  color: #214c43;
+}

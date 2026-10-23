@@ -1,133 +1,122 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { ControlAcceso } from './control-acceso';
+import { SesionOperador } from '../services/sesion-operador.service';
 
-describe('Control de acceso', () => {
+describe('Registrar entrada', () => {
   let http: HttpTestingController;
   let c: ControlAcceso;
-  const celda = { id: 2, codigo: 'TEST-C', tipo: 'Libre' };
-  const stay = {
-    id: 3,
-    vehiculo_id: 1,
-    celda_id: 2,
-    entrada: '2026-10-19T15:00:00Z',
-    salida: null,
-    operador_entrada_id: 4,
-    operador_salida_id: null,
+  const celda = { id: 2, codigo: 'A1', tipo: 'AUTO' };
+  const vehiculo = {
+    id: 1,
+    placa: 'ABC123',
+    marca: 'Renault',
+    color: 'Azul',
+    modelo: 2026,
+    tipo: 'AUTOMOVIL' as const,
+    fecha_vencimiento: '2027-01-31',
   };
-  const state = {
-    vehiculo: {
-      id: 1,
-      placa: 'TEST-A',
-      marca: 'Prueba',
-      color: 'Azul',
-      modelo: 2026,
-      tipo: 'MOTO',
-    },
+  const fuera = {
+    vehiculo,
+    esta_dentro: false,
+    estancia: null,
+    mensualidad: 'VIGENTE' as const,
+    celda_sugerida: celda,
+  };
+  const dentro = {
+    ...fuera,
     esta_dentro: true,
-    estancia: { ...stay, celda },
+    estancia: {
+      id: 3,
+      vehiculo_id: 1,
+      celda_id: 2,
+      entrada: '2026-10-19T15:00:00Z',
+      salida: null,
+      operador_entrada_id: 4,
+      operador_salida_id: null,
+      celda,
+    },
+    celda_sugerida: null,
   };
+
   beforeEach(() => {
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       imports: [ControlAcceso],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
+    TestBed.inject(SesionOperador).iniciar({ id: 4, nombre: 'Ana', telefono: '001' });
     http = TestBed.inject(HttpTestingController);
     c = TestBed.createComponent(ControlAcceso).componentInstance;
-    http
-      .expectOne('/celdas?offset=0&limit=100')
-      .flush({ items: [celda], total: 2, offset: 0, limit: 100 });
-    http
-      .expectOne('/celdas?offset=1&limit=100')
-      .flush({ items: [{ ...celda, id: 5 }], total: 2, offset: 1, limit: 100 });
-    http
-      .expectOne('/operadores?offset=0&limit=100')
-      .flush({
-        items: [{ id: 4, nombre: 'Prueba', telefono: '001' }],
-        total: 1,
-        offset: 0,
-        limit: 100,
-      });
   });
+
   afterEach(() => http.verify());
 
-  it('recorre todas las páginas y registra entrada normalizada sin fecha ni doble envío', () => {
-    expect(c.celdas().length).toBe(2);
-    c.entrada.setValue({ placa: ' test-a ', celda_id: 2, operador_id: 4 });
-    c.registrarEntrada();
-    c.registrarEntrada();
+  function consultar(estado: object) {
+    c.consulta.controls.placa.setValue(' abc123 ');
+    c.buscar();
+    http.expectOne('/estancias/vehiculo/ABC123').flush(estado);
+  }
+
+  it('muestra la tarjeta y la celda sugerida sin enviar celda al confirmar', () => {
+    consultar(fuera);
+    expect(c.estado()?.vehiculo.placa).toBe('ABC123');
+    expect(c.estado()?.celda_sugerida?.codigo).toBe('A1');
+
+    c.confirmarEntrada();
+    c.confirmarEntrada();
     const req = http.expectOne('/estancias/entrada');
-    expect(req.request.body).toEqual({ placa: 'TEST-A', celda_id: 2, operador_id: 4 });
-    req.flush(stay);
-    expect(c.exitoEntrada()).toContain('TEST-C');
+    expect(req.request.body).toEqual({ placa: 'ABC123', operador_id: 4 });
+    req.flush({ ...dentro.estancia, celda });
+    expect(c.exitoEntrada()).toContain('ABC123');
+    expect(c.exitoEntrada()).toContain('A1');
     expect(c.exitoEntrada()).toContain('Bogotá');
+    expect(c.estado()).toBeNull();
   });
-  it('rechaza blancos y muestra los conflictos de ocupación y referencias', () => {
-    c.entrada.setValue({ placa: ' ', celda_id: 2, operador_id: 4 });
-    c.registrarEntrada();
+
+  it('bloquea la entrada con mensualidad vencida y muestra el vencimiento', () => {
+    consultar({ ...fuera, mensualidad: 'VENCIDA' });
+    c.confirmarEntrada();
     http.expectNone('/estancias/entrada');
-    for (const [status, detail] of [
-      [409, 'El vehículo ya está dentro.'],
-      [409, 'La celda está ocupada.'],
-      [404, 'Operador no encontrado.'],
-    ] as const) {
-      c.entrada.controls.placa.setValue('TEST-A');
-      c.registrarEntrada();
-      http.expectOne('/estancias/entrada').flush({ detail }, { status, statusText: 'Error' });
-      expect(c.errorEntrada()).toBe(detail);
-      expect(c.saving()).toBe(false);
-    }
+    expect(c.estado()?.mensualidad).toBe('VENCIDA');
   });
-  it('descarta respuestas antiguas y no permite salida al cambiar de placa', () => {
-    c.consulta.setValue({ placa: 'TEST-A', operador_id: 4 });
-    c.buscar();
-    c.consulta.controls.placa.setValue('TEST-B');
-    http.expectOne('/estancias/vehiculo/TEST-A').flush(state);
-    expect(c.estado()).toBeNull();
-    c.registrarSalida();
-    http.expectNone('/estancias/salida');
-    c.consulta.controls.placa.setValue('TEST-A');
-    c.buscar();
-    http.expectOne('/estancias/vehiculo/TEST-A').flush(state);
-    c.consulta.controls.placa.setValue('TEST-B');
-    expect(c.estado()).toBeNull();
+
+  it('avisa cuando el vehículo ya figura dentro con su hora de entrada', () => {
+    consultar(dentro);
+    c.confirmarEntrada();
+    http.expectNone('/estancias/entrada');
+    expect(c.estado()?.esta_dentro).toBe(true);
+    expect(c.fecha(dentro.estancia.entrada)).toContain('10:00:00');
   });
-  it('consulta antes de salir, envía solo placa y operador y consulta fuera tras cerrar', () => {
-    c.consulta.setValue({ placa: 'test-a', operador_id: 4 });
-    c.buscar();
-    http.expectOne('/estancias/vehiculo/TEST-A').flush(state);
-    c.registrarSalida();
-    c.registrarSalida();
-    const req = http.expectOne('/estancias/salida');
-    expect(req.request.body).toEqual({ placa: 'TEST-A', operador_id: 4 });
-    req.flush({ ...stay, salida: '2026-10-19T16:00:00Z', operador_salida_id: 4 });
-    http
-      .expectOne('/estancias/vehiculo/TEST-A')
-      .flush({ ...state, esta_dentro: false, estancia: null });
-    expect(c.estado()?.esta_dentro).toBe(false);
-    expect(c.exitoSalida()).toContain('Salida registrada');
+
+  it('avisa cuando no hay celdas libres del tipo', () => {
+    consultar({ ...fuera, celda_sugerida: null });
+    c.confirmarEntrada();
+    http.expectNone('/estancias/entrada');
+    expect(c.estado()?.celda_sugerida).toBeNull();
   });
-  it('distingue no registrado y conexión fallida e invalida salida rechazada', () => {
-    c.consulta.setValue({ placa: 'TEST-A', operador_id: 4 });
+
+  it('rechaza placas vacías y conserva el mensaje del backend', () => {
+    c.consulta.controls.placa.setValue('   ');
+    c.buscar();
+    http.expectNone('/estancias/vehiculo/');
+
+    c.consulta.controls.placa.setValue('ZZZ999');
     c.buscar();
     http
-      .expectOne('/estancias/vehiculo/TEST-A')
-      .flush({}, { status: 404, statusText: 'Not Found' });
-    expect(c.errorConsulta()).toBe('Vehículo no registrado.');
+      .expectOne('/estancias/vehiculo/ZZZ999')
+      .flush({ detail: 'Vehículo no encontrado.' }, { status: 404, statusText: 'Not Found' });
+    expect(c.errorConsulta()).toBe('Vehículo no encontrado.');
+
+    c.consulta.controls.placa.setValue('ABC123');
     c.buscar();
-    http.expectOne('/estancias/vehiculo/TEST-A').error(new ProgressEvent('error'));
+    http.expectOne('/estancias/vehiculo/ABC123').error(new ProgressEvent('error'));
     expect(c.errorConsulta()).toContain('No se pudo conectar');
-    c.buscar();
-    http.expectOne('/estancias/vehiculo/TEST-A').flush(state);
-    c.registrarSalida();
-    http
-      .expectOne('/estancias/salida')
-      .flush({ detail: 'Sin estancia abierta.' }, { status: 409, statusText: 'Conflict' });
-    expect(c.estado()).toBeNull();
-    expect(c.errorConsulta()).toContain('Consulta nuevamente');
   });
-  it('interpreta el offset recibido y presenta el mismo instante en Bogotá', () => {
+
+  it('presenta el mismo instante en hora de Bogotá', () => {
     expect(c.fecha('2026-10-19T15:00:00Z')).toBe(c.fecha('2026-10-19T10:00:00-05:00'));
     expect(c.fecha('2026-10-19T15:00:00Z')).toContain('10:00:00');
   });
