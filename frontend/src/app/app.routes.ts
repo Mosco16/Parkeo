@@ -28,6 +28,12 @@ export const routes: Routes = [
       import('./registrar-salida/registrar-salida').then((m) => m.RegistrarSalida),
   },
   {
+    path: 'cambiar-celda',
+    title: 'Cambiar celda | Autos Colombia',
+    canActivate: [operadorActivo],
+    loadComponent: () => import('./cambiar-celda/cambiar-celda').then((m) => m.CambiarCelda),
+  },
+  {
     path: 'gestion/operadores',
     title: 'Operadores | Autos Colombia',
     loadComponent: () => import('./operadores/operadores').then((m) => m.Operadores),

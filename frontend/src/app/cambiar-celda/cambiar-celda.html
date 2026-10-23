@@ -1,0 +1,101 @@
+<section class="management" aria-labelledby="move-title">
+  <header class="heading">
+    <div>
+      <span class="eyebrow">AUTOS COLOMBIA</span>
+      <h1 id="move-title">Cambiar celda</h1>
+      <p>Mueve una estancia abierta a otra celda libre del mismo tipo.</p>
+    </div>
+  </header>
+
+  <section class="panel" aria-label="Consulta de placa">
+    <form [formGroup]="consulta" (ngSubmit)="buscar()">
+      <fieldset [disabled]="busy()">
+        <legend class="sr-only">Consulta del vehículo</legend>
+        <div class="form-grid">
+          <div class="field">
+            <label for="move-plate">Placa</label>
+            <input
+              id="move-plate"
+              type="text"
+              formControlName="placa"
+              autocomplete="off"
+              aria-describedby="move-plate-error"
+            />
+            <span id="move-plate-error" class="field-error">
+              @if (consulta.controls.placa.touched && consulta.controls.placa.invalid) {
+                La placa es obligatoria y no puede estar vacía.
+              }
+            </span>
+          </div>
+        </div>
+        <button type="submit" class="primary" [disabled]="busy()">Consultar vehículo</button>
+      </fieldset>
+    </form>
+  </section>
+
+  @if (querying()) {
+    <p role="status" class="notice">Consultando vehículo…</p>
+  }
+
+  @if (estado(); as state) {
+    <section class="panel vehicle-card" aria-labelledby="move-summary">
+      <h2 id="move-summary">{{ state.vehiculo.placa }}</h2>
+      <dl class="readonly">
+        <div>
+          <dt>Tipo</dt>
+          <dd>{{ state.vehiculo.tipo }}</dd>
+        </div>
+        <div>
+          <dt>Celda actual</dt>
+          <dd>{{ state.estancia?.celda?.codigo ?? 'Sin estancia abierta' }}</dd>
+        </div>
+        <div>
+          <dt>Entrada</dt>
+          <dd>{{ state.estancia ? fecha(state.estancia.entrada) : '—' }}</dd>
+        </div>
+      </dl>
+
+      @if (!state.esta_dentro || !state.estancia) {
+        <p class="notice error" role="alert">El vehículo no tiene una entrada abierta.</p>
+      } @else if (cargandoOpciones()) {
+        <p role="status" class="notice">Cargando celdas libres…</p>
+      } @else if (!libres().length) {
+        <p class="notice" role="status">
+          No hay otras celdas libres de tipo {{ state.estancia.celda.tipo }}.
+        </p>
+      } @else {
+        <div class="field">
+          <label for="move-cell">Nueva celda</label>
+          <select id="move-cell" [formControl]="celda" [disabled]="busy()">
+            <option [ngValue]="null">Selecciona una celda libre</option>
+            @for (opcion of libres(); track opcion.id) {
+              <option [ngValue]="opcion.id">{{ opcion.codigo }}</option>
+            }
+          </select>
+        </div>
+        <button
+          type="button"
+          class="primary"
+          (click)="confirmar()"
+          [disabled]="busy() || celda.value === null"
+        >
+          Confirmar cambio
+        </button>
+      }
+    </section>
+  }
+
+  @if (errorConsulta()) {
+    <p class="notice error" role="alert">{{ errorConsulta() }}</p>
+  }
+  @if (errorAccion()) {
+    <p class="notice error" role="alert">{{ errorAccion() }}</p>
+  }
+  @if (exito()) {
+    <p class="notice success" role="status">{{ exito() }}</p>
+  }
+
+  <p class="hint">
+    Solo se ofrecen celdas LIBRES del mismo tipo del vehículo. El cambio no borra el historial.
+  </p>
+</section>
