@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_session
-from app.models import Operador
 from app.schemas.operador import OperadorActualizar, OperadorCrear, OperadorRespuesta, OperadoresPagina
 from app.services import operador as service
 
@@ -14,7 +13,7 @@ OperatorId = Annotated[int, Path(ge=1, le=9223372036854775807)]
 
 
 @router.post("", response_model=OperadorRespuesta, status_code=201)
-def create(data: OperadorCrear, session: DatabaseSession) -> Operador:
+def create(data: OperadorCrear, session: DatabaseSession):
     return service.create_operator(session, data)
 
 
@@ -28,12 +27,12 @@ def list_all(
 
 
 @router.get("/{id}", response_model=OperadorRespuesta)
-def get_one(id: OperatorId, session: DatabaseSession) -> Operador:
+def get_one(id: OperatorId, session: DatabaseSession):
     return service.get_operator(session, id)
 
 
 @router.patch("/{id}", response_model=OperadorRespuesta)
-def update(id: OperatorId, data: OperadorActualizar, session: DatabaseSession) -> Operador:
+def update(id: OperatorId, data: OperadorActualizar, session: DatabaseSession):
     return service.update_operator(session, id, data)
 
 
