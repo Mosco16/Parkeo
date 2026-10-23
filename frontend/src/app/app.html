@@ -3,6 +3,14 @@
     <a class="brand" routerLink="/" aria-label="Autos Colombia, inicio">
       <span class="brand-mark" aria-hidden="true">AC</span><span>Autos Colombia</span>
     </a>
+    <div class="session" aria-live="polite">
+      @if (operador(); as activo) {
+        <span class="session-name">Turno: <strong>{{ activo.nombre }}</strong></span>
+        <button type="button" (click)="cambiarOperador()">Cambiar operador</button>
+      } @else {
+        <a routerLink="/operador" routerLinkActive="active">Iniciar turno</a>
+      }
+    </div>
     <nav aria-label="Navegación principal">
       <a routerLink="/control-acceso" routerLinkActive="active" ariaCurrentWhenActive="page"
         >Control de acceso</a

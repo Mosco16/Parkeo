@@ -1,9 +1,17 @@
 import { Routes } from '@angular/router';
+import { operadorActivo } from './guards/operador.guard';
 
 export const routes: Routes = [
   {
+    path: 'operador',
+    title: 'Iniciar turno | Autos Colombia',
+    loadComponent: () =>
+      import('./seleccion-operador/seleccion-operador').then((m) => m.SeleccionOperador),
+  },
+  {
     path: 'control-acceso',
-    title: 'Control de acceso | Autos Colombia',
+    title: 'Registrar entrada | Autos Colombia',
+    canActivate: [operadorActivo],
     loadComponent: () => import('./control-acceso/control-acceso').then((m) => m.ControlAcceso),
   },
   {

@@ -45,6 +45,28 @@ nav a.active {
   color: #214c43;
   font-weight: 600;
 }
+.session {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #526c60;
+}
+.session button {
+  padding: 6px 10px;
+  border: 1px solid #dce2dc;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.session a {
+  padding: 6px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #214c43;
+  background: #e3ece5;
+  font-weight: 600;
+}
 main {
   min-height: calc(100vh - 174px);
 }
