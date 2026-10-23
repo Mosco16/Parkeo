@@ -11,21 +11,47 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
 - `backend/app/config.py`: carga `backend/.env` por ruta absoluta; el entorno tiene prioridad.
 - `backend/app/database.py`: motor SQLAlchemy y sesiones bajo demanda con psycopg.
 - `backend/check_db.py`: comprobación explícita mediante `SELECT 1`, sin DDL.
-- `backend/app/models.py`: Base, Vehiculo, Celda y Operador; tablas en singular y minúsculas.
+- `backend/app/models.py`: Base, Vehiculo, Celda, Operador y Estancia; tablas en
+  singular y minúsculas.
 - `backend/app/schemas/vehiculo.py`: validación Pydantic y contratos de respuesta.
 - `backend/app/routers/vehiculos.py`: rutas CRUD con APIRouter.
 - `backend/app/services/vehiculo.py`: lógica de vehículos, transacciones y errores públicos.
 - `backend/app/schemas/celda.py`, `app/routers/celdas.py` y `app/services/celda.py`:
-  CRUD de celdas con código normalizado y tipo libre obligatorio.
-- `backend/migrations/`: revisiones Alembic; `backend/alembic.ini` reutiliza la configuración privada.
+  CRUD de celdas con código normalizado y tipo obligatorio `AUTO` o `MOTO`;
+  `GET /celdas/disponibilidad` devuelve estado y cupo por tipo.
+- `backend/app/schemas/estancia.py`, `app/routers/estancias.py` y
+  `app/services/estancia.py`: entrada sin `celda_id`, salida, cambio de celda y
+  consulta por placa; aquí viven las reglas de mensualidad y de tipo de celda.
+- **Regla de capas:** los routers solo reciben la petición, delegan en un servicio
+  de `app/services/` y devuelven la respuesta. Las consultas a la base, los
+  `commit`/`rollback` y la traducción de errores no van en los routers.
+- `backend/scripts/cargar_datos_demo.py`: datos de demostración idempotentes; no
+  es una migración y solo debe ejecutarse en una base de demostración.
+- `backend/migrations/`: revisiones Alembic `0001` a `0004`; `backend/alembic.ini`
+  reutiliza la configuración privada.
 - `backend/.env.example`: plantilla pública; conservar cualquier `.env` existente y privado.
 - `backend/requirements.txt`: dependencias de ejecución y pruebas con versiones
   exactas, incluidas las transitivas.
 - `backend/.venv/`: entorno virtual local, excluido de Git.
 - `frontend/src/app/`: componentes standalone, configuración y rutas Angular.
 - `frontend/src/app/home/`: bienvenida y estado de salud de la API.
+- `frontend/src/app/operador/` y `frontend/src/app/seleccion-operador/`: inicio de
+  turno; `SesionOperador` guarda el operador activo en `sessionStorage`.
+- `frontend/src/app/guards/operador.guard.ts`: `operadorActivo` protege las
+  pantallas de operación.
+- `frontend/src/app/tablero/`: cuadrícula de celdas, cupo por tipo y consulta por placa.
+- `frontend/src/app/control-acceso/`: registrar entrada y corregir una entrada duplicada.
+- `frontend/src/app/registrar-salida/`: registrar salida y volver a la entrada si
+  el vehículo no tiene estancia abierta.
+- `frontend/src/app/cambiar-celda/`: mover una estancia abierta a otra celda libre
+  del mismo tipo.
 - `frontend/src/app/vehiculos/`: formulario reactivo y listado paginado de vehículos.
 - `frontend/src/app/celdas/`: gestión de celdas; `CeldasService` reutiliza la base de API.
+- `frontend/src/app/operadores/`: gestión de operadores.
+- `frontend/src/app/services/`: `ApiService`, `CeldasService`, `OperadoresService`,
+  `EstanciasService` y `SesionOperador`.
+- `frontend/src/app/utils/`: `fechas.ts` (hora de Bogotá) y `mensajes.ts`
+  (mensajes de error compartidos de las pantallas de operación).
 - `frontend/src/app/services/api.service.ts`: llamadas HTTP y base de API centralizadas.
 - `frontend/src/app/models/vehiculo.ts`: contratos de solicitudes, respuestas y tipos.
 - `frontend/src/styles.css`: estilos globales; estilos de componentes en CSS.
@@ -71,10 +97,15 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
   del controlador. Verificar PostgreSQL con `backend/check_db.py`; las pruebas
   simuladas no prueban que exista una conexión local real.
 - La pantalla consulta `/health` mediante `HttpClient` al cargarse. El proxy de
-  desarrollo en `frontend/proxy.conf.json` dirige `/health`, `/vehiculos` y
-  `/vehiculos/**` a `127.0.0.1:8000`. La pantalla de gestión usa `/gestion/vehiculos`
-  para no colisionar con las rutas API. Las llamadas pasan por `ApiService`.
-  Mantener rutas relativas y documentar cualquier integración que se añada.
+  desarrollo en `frontend/proxy.conf.json` dirige `/health`, `/vehiculos`,
+  `/celdas`, `/operadores` y `/estancias` (con sus subrutas) a `127.0.0.1:8000`.
+  Las pantallas de gestión usan `/gestion/vehiculos`, `/gestion/celdas` y
+  `/gestion/operadores` para no colisionar con las rutas API. Las llamadas pasan
+  por los servicios de `frontend/src/app/services/`. Mantener rutas relativas y
+  documentar cualquier integración que se añada.
+- Las pantallas de operación (`/tablero`, `/control-acceso`, `/salida`,
+  `/cambiar-celda`) exigen un turno activo mediante el guard `operadorActivo`;
+  no vuelvas a pedir el operador dentro de cada pantalla.
 
 ## Secretos y archivos excluidos
 
@@ -115,13 +146,15 @@ try {
 }
 ```
 
-La prueba actual comprueba `/health` sin iniciar un servidor externo. Starlette
-puede emitir un aviso de deprecación sobre `httpx`; distinguirlo de un fallo.
+La suite incluye pruebas de `/health`, CRUD y estancias sin iniciar un servidor
+externo. Starlette puede emitir un aviso de deprecación sobre `httpx`;
+distinguirlo de un fallo.
 
-Las pruebas de integración de vehículos se habilitan con `RUN_POSTGRES_TESTS=1`
-y requieren `autos_colombia` con la revisión `0001`. Usan rollback exterior y
-savepoints: no crear tablas ni alterar migraciones para probar. Los valores de
-las secuencias pueden avanzar. Ver `backend/README.md` para comandos completos.
+Las pruebas de integración de vehículos, celdas, operadores y estancias se
+habilitan con `RUN_POSTGRES_TESTS=1` y requieren `autos_colombia` con la revisión
+`0004`. Usan rollback exterior y savepoints: no crear tablas ni alterar
+migraciones para probar. Los valores de las secuencias pueden avanzar. Ver
+`backend/README.md` para comandos completos.
 
 ### Frontend
 
