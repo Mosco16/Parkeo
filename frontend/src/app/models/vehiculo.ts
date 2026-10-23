@@ -6,6 +6,8 @@ export interface VehiculoCrear {
   modelo: number;
   marca: string;
   tipo: TipoVehiculo;
+  /** Fecha de vencimiento de la mensualidad en formato AAAA-MM-DD. */
+  fecha_vencimiento: string;
 }
 export type VehiculoActualizar = Partial<VehiculoCrear>;
 export interface Vehiculo extends VehiculoCrear {

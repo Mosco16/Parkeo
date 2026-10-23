@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { EMPTY, Observable, expand, reduce, throwError, timeout } from 'rxjs';
 import { Celda } from '../models/celda';
 import { Operador } from '../models/operador';
-import { EntradaCrear, SalidaCrear, Estancia, EstadoVehiculo } from '../models/estancia';
+import { CambioCeldaCrear, EntradaCrear, SalidaCrear, Estancia, EstanciaAbierta, EstadoVehiculo } from '../models/estancia';
 import { API_BASE_URL } from './api.service';
 import { CeldasService } from './celdas.service';
 import { OperadoresService } from './operadores.service';
@@ -23,10 +23,15 @@ export class EstanciasService {
   private readonly operators = inject(OperadoresService);
 
   entrada(data: EntradaCrear) {
-    return this.http.post<Estancia>(`${this.base}/entrada`, data).pipe(timeout(15000));
+    return this.http.post<EstanciaAbierta>(`${this.base}/entrada`, data).pipe(timeout(15000));
   }
   salida(data: SalidaCrear) {
     return this.http.post<Estancia>(`${this.base}/salida`, data).pipe(timeout(15000));
+  }
+  cambiarCelda(data: CambioCeldaCrear) {
+    return this.http
+      .post<EstanciaAbierta>(`${this.base}/cambiar-celda`, data)
+      .pipe(timeout(15000));
   }
   consultar(placa: string) {
     return this.http
