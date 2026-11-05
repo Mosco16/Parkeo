@@ -94,7 +94,7 @@ class ServicioEstancia:
         )
         query = (
             select(Celda)
-            .where(Celda.tipo == tipo, ~ocupada)
+            .where(Celda.tipo == tipo, Celda.activa.is_(True), ~ocupada)
             .order_by(func.length(Celda.codigo), Celda.codigo)
             .limit(1)
         )
@@ -186,7 +186,11 @@ class ServicioEstancia:
 
         celda_actual = self.session.get(Celda, estancia.celda_id)
         tipo_requerido = tipo_celda_requerido(vehiculo)
-        if celda_destino.tipo != tipo_requerido or celda_destino.tipo != celda_actual.tipo:
+        if (
+            not celda_destino.activa
+            or celda_destino.tipo != tipo_requerido
+            or celda_destino.tipo != celda_actual.tipo
+        ):
             raise EstanciaError(409, "La celda no está disponible o es de otro tipo.")
         if self.session.scalar(
             select(Estancia.id).where(

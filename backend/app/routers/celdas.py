@@ -5,7 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_session
 from app.dependencies import requiere_administrador, usuario_actual
-from app.schemas.celda import CeldaActualizar, CeldaCrear, CeldaRespuesta, CeldasPagina, DisponibilidadRespuesta
+from app.schemas.celda import (
+    CeldaActualizar,
+    CeldaCrear,
+    CeldaEstado,
+    CeldaRespuesta,
+    CeldasPagina,
+    DisponibilidadRespuesta,
+)
 from app.services import celda as service
 
 router = APIRouter(prefix="/celdas", tags=["Celdas"], dependencies=[Depends(usuario_actual)])
@@ -42,6 +49,12 @@ def get_one(id: CellId, session: DatabaseSession):
               dependencies=[Depends(requiere_administrador)])
 def update(id: CellId, data: CeldaActualizar, session: DatabaseSession):
     return service.update_cell(session, id, data)
+
+
+@router.patch("/{id}/estado", response_model=CeldaRespuesta,
+              dependencies=[Depends(requiere_administrador)])
+def change_state(id: CellId, data: CeldaEstado, session: DatabaseSession):
+    return service.cambiar_estado(session, id, data.activa)
 
 
 @router.delete("/{id}", status_code=204, dependencies=[Depends(requiere_administrador)])

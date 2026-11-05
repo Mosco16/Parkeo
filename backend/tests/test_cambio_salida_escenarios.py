@@ -111,7 +111,7 @@ def test_e10_cambio_a_otra_celda_libre_del_mismo_tipo(datos):
         actual = estado(d)['estancia']['celda']['id']
         libres = [
             c for c in disponibilidad(client)['celdas']
-            if c['tipo'] == 'AUTO' and c['estado'] == 'LIBRE' and c['id'] != actual
+            if c['tipo'] == 'AUTO' and c['estado'] == 'DISPONIBLE' and c['id'] != actual
         ]
         assert libres, 'La prueba necesita otra celda AUTO libre.'
         destino = libres[0]['id']
@@ -123,7 +123,7 @@ def test_e10_cambio_a_otra_celda_libre_del_mismo_tipo(datos):
 
         despues = estado(d)
         assert despues['esta_dentro'] and despues['estancia']['celda']['id'] == destino
-    prueba_estado_celda(d, actual, 'LIBRE')
+    prueba_estado_celda(d, actual, 'DISPONIBLE')
     prueba_estado_celda(d, destino, 'OCUPADA')
 
 
@@ -154,7 +154,7 @@ def test_e11_cambio_a_celda_ocupada_o_de_otro_tipo_no_cambia_nada(datos):
 
 
 def test_e12_salida_cierra_la_estancia_y_libera_la_celda(datos):
-    """E-12 / RN-SAL-01: la estancia queda CERRADA y la celda vuelve a LIBRE."""
+    """E-12 / RN-SAL-01: la estancia queda CERRADA y la celda vuelve a DISPONIBLE."""
     d = datos
     with TestClient(app) as client:
         assert client.post('/estancias/entrada', json=entrada(d)).status_code == 201
@@ -170,7 +170,7 @@ def test_e12_salida_cierra_la_estancia_y_libera_la_celda(datos):
 
         despues = estado(d)
         assert despues['esta_dentro'] is False and despues['estancia'] is None
-    prueba_estado_celda(d, celda_id, 'LIBRE')
+    prueba_estado_celda(d, celda_id, 'DISPONIBLE')
 
 
 def test_e13_salida_con_mensualidad_vencida_no_se_bloquea(datos):

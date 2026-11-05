@@ -84,6 +84,23 @@ def delete_cell(session: Session, cell_id: int) -> None:
     session.commit()
 
 
+@database_operation
+def cambiar_estado(session: Session, cell_id: int, activa: bool) -> Celda:
+    cell = find_cell(session, cell_id)
+    if not activa and session.scalar(
+        select(Estancia.id).where(
+            Estancia.celda_id == cell.id, Estancia.salida.is_(None)
+        )
+    ) is not None:
+        raise CeldaError(
+            409, "La celda tiene una estancia abierta y no se puede desactivar."
+        )
+    cell.activa = activa
+    session.commit()
+    session.refresh(cell)
+    return cell
+
+
 def disponibilidad(session: Session) -> dict:
     # RN-CEL-03: el estado se calcula, nunca se guarda.
     subq_abierta = select(Estancia.celda_id).where(Estancia.salida.is_(None)).distinct().subquery()
@@ -92,10 +109,24 @@ def disponibilidad(session: Session) -> dict:
     items = []
     cupo = {"AUTO": {"total": 0, "libres": 0}, "MOTO": {"total": 0, "libres": 0}}
     for celda in celdas:
-        estado = "OCUPADA" if celda.id in ocupadas else "LIBRE"
-        items.append({"id": celda.id, "codigo": celda.codigo, "tipo": celda.tipo, "estado": estado})
+        # Una celda en mantenimiento nunca se ofrece como disponible.
+        if not celda.activa:
+            estado = "MANTENIMIENTO"
+        elif celda.id in ocupadas:
+            estado = "OCUPADA"
+        else:
+            estado = "DISPONIBLE"
+        items.append(
+            {
+                "id": celda.id,
+                "codigo": celda.codigo,
+                "tipo": celda.tipo,
+                "activa": celda.activa,
+                "estado": estado,
+            }
+        )
         if celda.tipo in cupo:
             cupo[celda.tipo]["total"] += 1
-            if estado == "LIBRE":
+            if estado == "DISPONIBLE":
                 cupo[celda.tipo]["libres"] += 1
     return {"celdas": items, "cupo": cupo}

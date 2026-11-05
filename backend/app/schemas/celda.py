@@ -28,9 +28,17 @@ class CeldaActualizar(BaseModel):
         return value
 
 
+class CeldaEstado(BaseModel):
+    """S5: el administrador solo enciende o apaga la celda."""
+
+    model_config = ConfigDict(extra="forbid")
+    activa: bool
+
+
 class CeldaRespuesta(CeldaCrear):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
     id: int
+    activa: bool
 
 
 class CeldasPagina(BaseModel):
@@ -40,6 +48,9 @@ class CeldasPagina(BaseModel):
     limit: int
 
 
+EstadoCelda = Literal["DISPONIBLE", "OCUPADA", "MANTENIMIENTO"]
+
+
 class CeldaDisponible(BaseModel):
     """RN-CEL-03: el estado se calcula, nunca se guarda."""
 
@@ -47,7 +58,8 @@ class CeldaDisponible(BaseModel):
     id: int
     codigo: str
     tipo: TipoCelda
-    estado: Literal["LIBRE", "OCUPADA"]
+    activa: bool
+    estado: EstadoCelda
 
 
 class CupoTipo(BaseModel):

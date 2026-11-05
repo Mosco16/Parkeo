@@ -31,7 +31,11 @@ def datos():
             documento=f'{token}-OP', nombre=f'{token}-OP', telefono='001',
             usuario=f'{token}-OP'.lower(), password_hash='hash-de-prueba', rol='OPERADOR',
         )
-        celdas = [Celda(codigo=f'{token}-A1', tipo='AUTO'), Celda(codigo=f'{token}-M1', tipo='MOTO')]
+        celdas = [
+            Celda(codigo=f'{token}-A1', tipo='AUTO'),
+            Celda(codigo=f'{token}-A2', tipo='AUTO'),
+            Celda(codigo=f'{token}-M1', tipo='MOTO'),
+        ]
         vehiculo = Vehiculo(placa=f'{token}-AUTO', color='Azul', modelo=2026, marca='Prueba',
                             tipo='AUTOMOVIL', fecha_vencimiento=date.today() + timedelta(days=30))
         s.add(usuario)
@@ -39,6 +43,7 @@ def datos():
         s.add(vehiculo)
         s.flush()
         data = {
+            'token': token,
             'celdas': [c.id for c in celdas],
             'vehiculo': vehiculo.id,
             'placa': vehiculo.placa,
@@ -69,7 +74,7 @@ def test_estado_cambia_con_la_estancia_abierta(datos):
     d = datos
     with TestClient(app) as client:
         cuerpo, antes = mapa(client)
-        assert antes[d['celdas'][0]]['estado'] == 'LIBRE'
+        assert antes[d['celdas'][0]]['estado'] == 'DISPONIBLE'
         cupo_antes = cuerpo['cupo']['AUTO']
 
         entrada = client.post('/estancias/entrada', json={'placa': d['placa']})
@@ -84,7 +89,7 @@ def test_estado_cambia_con_la_estancia_abierta(datos):
         assert client.post('/estancias/salida',
                            json={'placa': d['placa']}).status_code == 200
         cuerpo, liberada = mapa(client)
-        assert liberada[celda]['estado'] == 'LIBRE'
+        assert liberada[celda]['estado'] == 'DISPONIBLE'
         assert cuerpo['cupo']['AUTO'] == cupo_antes
 
 
@@ -95,5 +100,47 @@ def test_cupo_coincide_con_la_lista_de_celdas(datos):
         celdas = [c for c in cuerpo['celdas'] if c['tipo'] == tipo]
         assert cuerpo['cupo'][tipo] == {
             'total': len(celdas),
-            'libres': sum(1 for c in celdas if c['estado'] == 'LIBRE'),
+            'libres': sum(1 for c in celdas if c['estado'] == 'DISPONIBLE'),
         }
+
+
+def test_celda_en_mantenimiento_no_se_asigna_ni_se_desactiva_ocupada(datos):
+    d = datos
+    objetivo = d['celdas'][0]
+    app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+        id=d['usuario'], rol='ADMINISTRADOR'
+    )
+    try:
+        with TestClient(app) as client:
+            apagada = client.patch(f'/celdas/{objetivo}/estado', json={'activa': False})
+            assert apagada.status_code == 200
+            assert apagada.json()['activa'] is False
+
+            cuerpo, celdas = mapa(client)
+            assert celdas[objetivo]['estado'] == 'MANTENIMIENTO'
+            assert celdas[objetivo]['activa'] is False
+            assert cuerpo['cupo']['AUTO']['libres'] == sum(
+                1 for c in cuerpo['celdas']
+                if c['tipo'] == 'AUTO' and c['estado'] == 'DISPONIBLE'
+            )
+
+            entrada = client.post('/estancias/entrada', json={'placa': d['placa']})
+            assert entrada.status_code == 201
+            ocupada = entrada.json()['celda']['id']
+            assert ocupada != objetivo
+
+            # S5: una celda con estancia abierta no se puede apagar.
+            conflicto = client.patch(f'/celdas/{ocupada}/estado', json={'activa': False})
+            assert conflicto.status_code == 409
+            assert 'estancia abierta' in conflicto.json()['detail']
+
+            assert client.post('/estancias/salida',
+                               json={'placa': d['placa']}).status_code == 200
+            reactivada = client.patch(f'/celdas/{objetivo}/estado', json={'activa': True})
+            assert reactivada.status_code == 200
+            _, final = mapa(client)
+            assert final[objetivo]['estado'] == 'DISPONIBLE'
+    finally:
+        app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+            id=d['usuario'], rol='OPERADOR'
+        )
