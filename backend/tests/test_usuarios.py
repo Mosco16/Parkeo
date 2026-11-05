@@ -120,6 +120,85 @@ def test_duplicados_devuelven_409_con_mensaje_especifico(api, constraint, detail
     session.rollback.assert_called_once()
 
 
+def test_restablecer_password_hashea_la_clave_y_no_la_expone(api):
+    client, session = api
+    usuario = session.get.return_value
+
+    resultado = client.post("/usuarios/1/restablecer-password",
+                            json={"password": "NuevaClave2026*"})
+
+    assert resultado.status_code == 200
+    assert usuario.password_hash.startswith("$2")
+    assert usuario.password_hash != "NuevaClave2026*"
+    assert "password" not in resultado.json()
+    session.commit.assert_called_once()
+
+
+@pytest.mark.parametrize("password", ["", " \t\n", "corta", None, 123])
+def test_restablecer_password_invalida_es_422(api, password):
+    client, session = api
+    assert client.post("/usuarios/1/restablecer-password",
+                       json={"password": password}).status_code == 422
+    session.commit.assert_not_called()
+
+
+def test_cambio_de_estado_actualiza_la_cuenta(api):
+    client, session = api
+    administrador = session.get.return_value
+    operador = usuario_de_prueba(id=2)
+    # La sesión también resuelve la cuenta autenticada (id=1) y el destino (id=2).
+    session.get.side_effect = lambda entidad, clave, *a, **k: (
+        administrador if clave == 1 else operador
+    )
+
+    resultado = client.patch("/usuarios/2/estado", json={"activo": False})
+
+    assert resultado.status_code == 200
+    assert resultado.json()["activo"] is False
+    assert operador.activo is False
+    session.commit.assert_called_once()
+
+
+@pytest.mark.parametrize("metodo,ruta,payload", [
+    ("get", "/usuarios/99", None),
+    ("patch", "/usuarios/99", {"nombre": "Otro"}),
+    ("patch", "/usuarios/99/estado", {"activo": False}),
+    ("post", "/usuarios/99/restablecer-password", {"password": "NuevaClave2026*"}),
+])
+def test_cuenta_inexistente_es_404(api, metodo, ruta, payload):
+    client, session = api
+    administrador = session.get.return_value
+    # Id 1 es la cuenta autenticada; el resto no existe.
+    session.get.side_effect = lambda entidad, clave, *a, **k: (
+        administrador if clave == 1 else None
+    )
+
+    respuesta = (
+        client.get(ruta) if payload is None else getattr(client, metodo)(ruta, json=payload)
+    )
+
+    assert respuesta.status_code == 404
+    assert respuesta.json()["detail"] == "Usuario no encontrado."
+
+
+def test_no_existe_borrado_fisico_de_cuentas(api):
+    client, _ = api
+
+    # S4: las cuentas no se eliminan, solo se desactivan.
+    assert client.delete("/usuarios/1").status_code == 405
+
+
+def test_listado_solo_incluye_operadores(api):
+    client, session = api
+    session.scalar.return_value = 0
+    session.scalars.return_value = []
+
+    assert client.get("/usuarios").status_code == 200
+
+    consulta = session.scalars.call_args.args[0]
+    assert "usuario.rol" in str(consulta)
+
+
 def test_database_failure_rolls_back_and_is_generic(api):
     client, session = api
     session.get.side_effect = SQLAlchemyError("PRIVATE DRIVER DETAILS")

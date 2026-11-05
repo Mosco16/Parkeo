@@ -79,6 +79,11 @@ def test_usuarios_structure_and_crud():
                     assert item["activo"] is True
                     assert "password_hash" not in item
 
+                    # S4: el listado de gestión solo muestra cuentas de operador.
+                    listado = client.get("/usuarios?limit=100").json()
+                    assert all(u["rol"] == "OPERADOR" for u in listado["items"])
+                    assert any(u["id"] == item["id"] for u in listado["items"])
+
                     ruta = f"/usuarios/{item['id']}"
                     assert client.get(ruta).json() == item
 
@@ -108,14 +113,28 @@ def test_usuarios_structure_and_crud():
                     item["telefono"] = "00045"
                     assert changed.json()["telefono"] == "00045"
 
-                    estado = client.patch(f"{ruta}/estado", json={"activo": False})
-                    assert estado.status_code == 200
-                    assert estado.json()["activo"] is False
-
                     restablecida = client.post(f"{ruta}/restablecer-password",
                                                json={"password": "NuevaClave2026*"})
                     assert restablecida.status_code == 200
                     assert restablecida.json()["id"] == item["id"]
+
+                    # S4: la contraseña restablecida sirve para iniciar sesión.
+                    acceso = client.post("/auth/login", json={
+                        "usuario": payload["usuario"], "password": "NuevaClave2026*",
+                    })
+                    assert acceso.status_code == 200
+                    assert acceso.json()["usuario"]["id"] == item["id"]
+                    assert client.post("/auth/login", json={
+                        "usuario": payload["usuario"], "password": payload["password"],
+                    }).status_code == 401
+
+                    estado = client.patch(f"{ruta}/estado", json={"activo": False})
+                    assert estado.status_code == 200
+                    assert estado.json()["activo"] is False
+                    # Desactivar impide el acceso aunque la contraseña sea correcta.
+                    assert client.post("/auth/login", json={
+                        "usuario": payload["usuario"], "password": "NuevaClave2026*",
+                    }).status_code == 403
 
                     guardado = session.get(Usuario, item["id"])
                     assert guardado.activo is False
