@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_engine
 from app.main import app
-from app.models import Celda, Estancia, Operador, Vehiculo
+from app.models import Celda, Estancia, Usuario, Vehiculo
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -29,12 +29,15 @@ def datos():
     engine = get_engine()
     with engine.connect() as c:
         assert c.scalar(text('SELECT current_database()')) == 'autos_colombia'
-        assert c.scalar(text('SELECT version_num FROM alembic_version')) in {'0003', '0004'}
+        assert int(c.scalar(text('SELECT version_num FROM alembic_version'))) >= 5
 
     token = 'TEST-CAM-' + uuid4().hex.upper()
     vigente = date.today() + timedelta(days=30)
     with Session(engine) as s, s.begin():
-        operador = Operador(nombre=f'{token}-OP', telefono='001')
+        usuario = Usuario(
+            documento=f'{token}-OP', nombre=f'{token}-OP', telefono='001',
+            usuario=f'{token}-OP'.lower(), password_hash='hash-de-prueba', rol='OPERADOR',
+        )
         celdas = [
             Celda(codigo=f'{token}-A1', tipo='AUTO'),
             Celda(codigo=f'{token}-A2', tipo='AUTO'),
@@ -46,7 +49,7 @@ def datos():
             'auto2': Vehiculo(placa=f'{token}-AUTO2', color='Gris', modelo=2026, marca='Prueba',
                               tipo='AUTOMOVIL', fecha_vencimiento=vigente),
         }
-        s.add(operador)
+        s.add(usuario)
         s.add_all(celdas)
         s.add_all(vehiculos.values())
         s.flush()
@@ -55,7 +58,7 @@ def datos():
             'ids': {clave: vehiculo.id for clave, vehiculo in vehiculos.items()},
             'vehiculos': [vehiculo.id for vehiculo in vehiculos.values()],
             'celdas': [c.id for c in celdas],
-            'operador': operador.id,
+            'usuario': usuario.id,
         }
     try:
         yield data
@@ -64,7 +67,7 @@ def datos():
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(data['vehiculos'])))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(data['vehiculos'])))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
-            s.execute(delete(Operador).where(Operador.id == data['operador']))
+            s.execute(delete(Usuario).where(Usuario.id == data['usuario']))
         with Session(engine) as s:
             assert s.scalar(
                 select(func.count()).select_from(Estancia)
@@ -73,7 +76,7 @@ def datos():
 
 
 def entrada(d, clave='auto'):
-    return {'placa': d['placas'][clave], 'operador_id': d['operador']}
+    return {'placa': d['placas'][clave], 'usuario_id': d['usuario']}
 
 
 def estado(d, clave='auto'):
@@ -155,7 +158,7 @@ def test_e12_salida_cierra_la_estancia_y_libera_la_celda(datos):
         assert salida.status_code == 200
         cerrada = salida.json()
         assert cerrada['salida'] is not None
-        assert cerrada['operador_salida_id'] == d['operador']
+        assert cerrada['usuario_salida_id'] == d['usuario']
         assert datetime.fromisoformat(cerrada['salida']) >= datetime.fromisoformat(cerrada['entrada'])
 
         despues = estado(d)

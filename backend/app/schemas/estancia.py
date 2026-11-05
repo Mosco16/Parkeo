@@ -10,17 +10,17 @@ Identificador = Annotated[int, Field(strict=True, ge=1, le=9223372036854775807)]
 
 
 class EntradaCrear(BaseModel):
-    """RN-ENT-05: el operador no escoge la celda; la asigna el servicio."""
+    """RN-ENT-05: el usuario no escoge la celda; la asigna el servicio."""
 
     model_config = ConfigDict(extra="forbid")
     placa: Placa
-    operador_id: Identificador
+    usuario_id: Identificador
 
 
 class SalidaCrear(BaseModel):
     model_config = ConfigDict(extra="forbid")
     placa: Placa
-    operador_id: Identificador
+    usuario_id: Identificador
 
 
 class CambioCeldaCrear(BaseModel):
@@ -36,8 +36,8 @@ class EstanciaRespuesta(BaseModel):
     celda_id: int
     entrada: datetime
     salida: datetime | None
-    operador_entrada_id: int
-    operador_salida_id: int | None
+    usuario_entrada_id: int
+    usuario_salida_id: int | None
 
     @field_validator("entrada", "salida")
     @classmethod

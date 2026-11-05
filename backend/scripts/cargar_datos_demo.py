@@ -1,13 +1,18 @@
-"""DATOS DE DEMOSTRACIÓN para Autos Colombia.
+"""DATOS DE DEMOSTRACIÓN para Parkeo.
 
 Este script NO es una migración: solo carga datos de ejemplo en una base que ya
 tiene las tablas creadas (``python -m alembic -c alembic.ini upgrade head``).
 
 Es idempotente: se puede ejecutar varias veces sin duplicar registros, porque
-usa los códigos únicos de celdas (``codigo``) y de vehículos (``placa``), y la
-combinación nombre + teléfono de los operadores. Las fechas de vencimiento se
-recalculan respecto a hoy en America/Bogota para que la demostración siga
-sirviendo con el paso del tiempo.
+usa los códigos únicos de celdas (``codigo``), las placas de vehículos
+(``placa``) y el nombre de usuario de las cuentas internas (``usuario``). Las
+fechas de vencimiento se recalculan respecto a hoy en America/Bogota para que
+la demostración siga sirviendo con el paso del tiempo.
+
+Cuentas de demostración (solo desarrollo):
+- ``admin`` / ``Parkeo2026*`` con rol ADMINISTRADOR.
+- ``ana.gomez``, ``carlos.perez`` y ``laura.rios`` / ``Parkeo2026*`` con rol
+  OPERADOR.
 
 Uso (PowerShell, desde la raíz del repositorio):
 
@@ -32,20 +37,24 @@ from sqlalchemy.orm import Session  # noqa: E402
 
 from app.config import load_database_settings  # noqa: E402
 from app.database import get_engine  # noqa: E402
-from app.models import Celda, Operador, Vehiculo  # noqa: E402
+from app.models import Celda, Usuario, Vehiculo  # noqa: E402
+from app.security import hash_password  # noqa: E402
 from app.services.estancia import hoy_bogota  # noqa: E402
 
 BANNER = "DATOS DE DEMOSTRACIÓN"
+PASSWORD_DEMO = "Parkeo2026*"
 
 CELDAS: list[tuple[str, str]] = [
     *[(f"A{numero}", "AUTO") for numero in range(1, 71)],
     *[(f"M{numero}", "MOTO") for numero in range(1, 11)],
 ]
 
-OPERADORES: list[tuple[str, str]] = [
-    ("Ana Gómez", "3001234567"),
-    ("Carlos Pérez", "3109876543"),
-    ("Laura Ríos", "3205556677"),
+# documento, nombre, teléfono, usuario, rol, correo
+USUARIOS: list[tuple[str, str, str, str, str, str]] = [
+    ("1000000001", "Administrador Parkeo", "3000000000", "admin", "ADMINISTRADOR", "admin@parkeo.local"),
+    ("1000000002", "Ana Gómez", "3001234567", "ana.gomez", "OPERADOR", "ana.gomez@parkeo.local"),
+    ("1000000003", "Carlos Pérez", "3109876543", "carlos.perez", "OPERADOR", "carlos.perez@parkeo.local"),
+    ("1000000004", "Laura Ríos", "3205556677", "laura.rios", "OPERADOR", "laura.rios@parkeo.local"),
 ]
 
 
@@ -88,13 +97,27 @@ def cargar_celdas(session: Session) -> tuple[int, int]:
     return creadas, actualizadas
 
 
-def cargar_operadores(session: Session) -> int:
-    existentes = {(operador.nombre, operador.telefono) for operador in session.scalars(select(Operador))}
+def cargar_usuarios(session: Session) -> int:
+    existentes = {usuario.usuario: usuario for usuario in session.scalars(select(Usuario))}
     creados = 0
-    for nombre, telefono in OPERADORES:
-        if (nombre, telefono) not in existentes:
-            session.add(Operador(nombre=nombre, telefono=telefono))
+    for documento, nombre, telefono, usuario, rol, correo in USUARIOS:
+        actual = existentes.get(usuario)
+        if actual is None:
+            session.add(
+                Usuario(
+                    documento=documento,
+                    nombre=nombre,
+                    telefono=telefono,
+                    usuario=usuario,
+                    password_hash=hash_password(PASSWORD_DEMO),
+                    rol=rol,
+                    activo=True,
+                    correo=correo,
+                )
+            )
             creados += 1
+        elif actual.rol != rol:
+            actual.rol = rol
     return creados
 
 
@@ -131,13 +154,13 @@ def main() -> int:
     with Session(get_engine()) as session:
         nombre = verificar_base(session, settings.name)
         celdas_creadas, celdas_actualizadas = cargar_celdas(session)
-        operadores_creados = cargar_operadores(session)
+        usuarios_creados = cargar_usuarios(session)
         vehiculos_creados, vehiculos_actualizados = cargar_vehiculos(session)
         session.commit()
 
     print(f"Base de datos: {nombre}")
     print(f"Celdas: {celdas_creadas} creadas, {celdas_actualizadas} actualizadas.")
-    print(f"Operadores: {operadores_creados} creados.")
+    print(f"Usuarios: {usuarios_creados} creados.")
     print(f"Vehículos: {vehiculos_creados} creados, {vehiculos_actualizados} actualizados.")
     print("Listo. Vuelve a ejecutarlo cuando quieras: no duplica registros.")
     print(BANNER)

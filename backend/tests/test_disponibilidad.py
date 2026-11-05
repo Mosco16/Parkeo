@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_engine
 from app.main import app
-from app.models import Celda, Estancia, Operador, Vehiculo
+from app.models import Celda, Estancia, Usuario, Vehiculo
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -24,11 +24,14 @@ def datos():
         assert c.scalar(text('SELECT current_database()')) == 'autos_colombia'
     token = 'TEST-DIS-' + uuid4().hex.upper()
     with Session(engine) as s, s.begin():
-        operador = Operador(nombre=f'{token}-OP', telefono='001')
+        usuario = Usuario(
+            documento=f'{token}-OP', nombre=f'{token}-OP', telefono='001',
+            usuario=f'{token}-OP'.lower(), password_hash='hash-de-prueba', rol='OPERADOR',
+        )
         celdas = [Celda(codigo=f'{token}-A1', tipo='AUTO'), Celda(codigo=f'{token}-M1', tipo='MOTO')]
         vehiculo = Vehiculo(placa=f'{token}-AUTO', color='Azul', modelo=2026, marca='Prueba',
                             tipo='AUTOMOVIL', fecha_vencimiento=date.today() + timedelta(days=30))
-        s.add(operador)
+        s.add(usuario)
         s.add_all(celdas)
         s.add(vehiculo)
         s.flush()
@@ -36,7 +39,7 @@ def datos():
             'celdas': [c.id for c in celdas],
             'vehiculo': vehiculo.id,
             'placa': vehiculo.placa,
-            'operador': operador.id,
+            'usuario': usuario.id,
         }
     try:
         yield data
@@ -45,7 +48,7 @@ def datos():
             s.execute(delete(Estancia).where(Estancia.vehiculo_id == data['vehiculo']))
             s.execute(delete(Vehiculo).where(Vehiculo.id == data['vehiculo']))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
-            s.execute(delete(Operador).where(Operador.id == data['operador']))
+            s.execute(delete(Usuario).where(Usuario.id == data['usuario']))
 
 
 def mapa(cliente):
@@ -63,7 +66,7 @@ def test_estado_cambia_con_la_estancia_abierta(datos):
         cupo_antes = cuerpo['cupo']['AUTO']
 
         entrada = client.post('/estancias/entrada',
-                              json={'placa': d['placa'], 'operador_id': d['operador']})
+                              json={'placa': d['placa'], 'usuario_id': d['usuario']})
         assert entrada.status_code == 201
         celda = entrada.json()['celda']['id']
 
@@ -73,7 +76,7 @@ def test_estado_cambia_con_la_estancia_abierta(datos):
         assert cuerpo['cupo']['AUTO']['libres'] == cupo_antes['libres'] - 1
 
         assert client.post('/estancias/salida',
-                           json={'placa': d['placa'], 'operador_id': d['operador']}).status_code == 200
+                           json={'placa': d['placa'], 'usuario_id': d['usuario']}).status_code == 200
         cuerpo, liberada = mapa(client)
         assert liberada[celda]['estado'] == 'LIBRE'
         assert cuerpo['cupo']['AUTO'] == cupo_antes

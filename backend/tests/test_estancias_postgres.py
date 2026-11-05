@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_engine
 from app.main import app
-from app.models import Celda, Estancia, Operador, Vehiculo
+from app.models import Celda, Estancia, Usuario, Vehiculo
 
 pytestmark = pytest.mark.skipif(os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.')
 
@@ -22,13 +22,19 @@ def datos():
     engine = get_engine()
     with engine.connect() as c:
         assert c.scalar(text('SELECT current_database()')) == 'autos_colombia'
-        assert c.scalar(text('SELECT version_num FROM alembic_version')) in {'0003', '0004'}
+        assert int(c.scalar(text('SELECT version_num FROM alembic_version'))) >= 5
     token = 'TEST-EST-' + uuid4().hex.upper()
     with Session(engine) as s, s.begin():
         vehicles = [Vehiculo(placa=f'{token}-{n}', color='Prueba', modelo=2026, marca='Prueba',
                              tipo='MOTO', fecha_vencimiento=date(2027, 1, 31)) for n in range(2)]
         cells = [Celda(codigo=f'{token}-{n}', tipo='MOTO') for n in range(2)]
-        operators = [Operador(nombre=f'{token}-{n}', telefono='001') for n in range(2)]
+        operators = [
+            Usuario(
+                documento=f'{token}-{n}', nombre=f'{token}-{n}', telefono='001',
+                usuario=f'{token}-{n}'.lower(), password_hash='hash-de-prueba', rol='OPERADOR',
+            )
+            for n in range(2)
+        ]
         s.add_all(vehicles + cells + operators)
         s.flush()
         data = {'v': [v.id for v in vehicles], 'placas': [v.placa for v in vehicles],
@@ -40,13 +46,13 @@ def datos():
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(data['v'])))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(data['v'])))
             s.execute(delete(Celda).where(Celda.id.in_(data['c'])))
-            s.execute(delete(Operador).where(Operador.id.in_(data['o'])))
+            s.execute(delete(Usuario).where(Usuario.id.in_(data['o'])))
         with Session(engine) as s:
             assert s.scalar(select(func.count()).select_from(Estancia).where(Estancia.vehiculo_id.in_(data['v']))) == 0
 
 
 def entrada(d, v=0, o=0):
-    return {'placa': d['placas'][v], 'operador_id': d['o'][o]}
+    return {'placa': d['placas'][v], 'usuario_id': d['o'][o]}
 
 
 def cantidad(d):
@@ -62,13 +68,13 @@ def test_recorrido_y_rechazos_sin_cambios_parciales(datos):
         assert outside.status_code == 200
         assert outside.json()['estancia'] is None and not outside.json()['esta_dentro']
         assert outside.json()['vehiculo']['id'] == d['v'][0]
-        for field, value in [('placa', 'INEXISTENTE-' + uuid4().hex), ('operador_id', 9223372036854775807)]:
+        for field, value in [('placa', 'INEXISTENTE-' + uuid4().hex), ('usuario_id', 9223372036854775807)]:
             assert client.post('/estancias/entrada', json={**entrada(d), field: value}).status_code == 404
             assert cantidad(d) == 0
         missing = 'INEXISTENTE-' + uuid4().hex
         assert client.get('/estancias/vehiculo/' + missing).status_code == 404
-        assert client.post('/estancias/salida', json={'placa': missing, 'operador_id': d['o'][0]}).status_code == 404
-        assert client.post('/estancias/salida', json={'placa': d['placas'][0], 'operador_id': 9223372036854775807}).status_code == 404
+        assert client.post('/estancias/salida', json={'placa': missing, 'usuario_id': d['o'][0]}).status_code == 404
+        assert client.post('/estancias/salida', json={'placa': d['placas'][0], 'usuario_id': 9223372036854775807}).status_code == 404
         sugerida = client.get(url).json()['celda_sugerida']
         assert sugerida is not None and sugerida['tipo'] == 'MOTO'
         before = datetime.now(timezone.utc)
@@ -76,26 +82,26 @@ def test_recorrido_y_rechazos_sin_cambios_parciales(datos):
         assert result.status_code == 201
         opened = result.json()
         assert before <= datetime.fromisoformat(opened['entrada']) <= datetime.now(timezone.utc)
-        assert opened['salida'] is None and opened['operador_salida_id'] is None
+        assert opened['salida'] is None and opened['usuario_salida_id'] is None
         assert opened['celda']['id'] == sugerida['id']
         inside = client.get(url).json()
         assert inside['esta_dentro'] and inside['estancia']['id'] == opened['id']
         assert inside['estancia']['celda']['id'] == opened['celda']['id']
         assert client.post('/estancias/entrada', json=entrada(d)).status_code == 409
         assert cantidad(d) == 1
-        closed = client.post('/estancias/salida', json={'placa': d['placas'][0], 'operador_id': d['o'][1]})
+        closed = client.post('/estancias/salida', json={'placa': d['placas'][0], 'usuario_id': d['o'][1]})
         assert closed.status_code == 200
-        assert closed.json()['operador_salida_id'] == d['o'][1]
+        assert closed.json()['usuario_salida_id'] == d['o'][1]
         assert datetime.fromisoformat(closed.json()['salida']) >= datetime.fromisoformat(opened['entrada'])
-        assert client.post('/estancias/salida', json={'placa': d['placas'][0], 'operador_id': d['o'][0]}).status_code == 409
+        assert client.post('/estancias/salida', json={'placa': d['placas'][0], 'usuario_id': d['o'][0]}).status_code == 409
         assert client.get(url).json()['estancia'] is None
         with Session(get_engine()) as s:
             saved = s.get(Estancia, opened['id'])
-            assert saved.operador_salida_id == d['o'][1]
+            assert saved.usuario_salida_id == d['o'][1]
             assert saved.salida == datetime.fromisoformat(closed.json()['salida'])
         assert client.post('/estancias/entrada', json=entrada(d, v=1)).status_code == 201
         assert cantidad(d) == 2
-        for route in ('/health', '/vehiculos?limit=1', '/celdas?limit=1', '/operadores?limit=1'):
+        for route in ('/health', '/vehiculos?limit=1', '/celdas?limit=1', '/usuarios?limit=1'):
             assert client.get(route).status_code == 200
 
 
@@ -106,7 +112,7 @@ def test_concurrencia_real(datos, caso):
         with TestClient(app) as client:
             assert client.post('/estancias/entrada', json=entrada(d)).status_code == 201
         path = '/estancias/salida'
-        payloads = [{'placa': d['placas'][0], 'operador_id': o} for o in d['o']]
+        payloads = [{'placa': d['placas'][0], 'usuario_id': o} for o in d['o']]
     else:
         path = '/estancias/entrada'
         # Misma placa y operadores distintos: el índice único decide.
@@ -139,6 +145,6 @@ def test_concurrencia_real(datos, caso):
     assert ('abierta' if caso == 'salida' else 'dentro') in loser['detail']
     with Session(engine) as s:
         saved = s.get(Estancia, winner['id'])
-        assert saved.operador_entrada_id == winner['operador_entrada_id']
-        assert saved.operador_salida_id == winner['operador_salida_id']
+        assert saved.usuario_entrada_id == winner['usuario_entrada_id']
+        assert saved.usuario_salida_id == winner['usuario_salida_id']
         assert saved.salida == (datetime.fromisoformat(winner['salida']) if winner['salida'] else None)

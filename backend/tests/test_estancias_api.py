@@ -33,31 +33,33 @@ def test_openapi_y_salud():
 
 @pytest.mark.parametrize('payload', [
     {},
-    {'placa': ' ', 'operador_id': 1},
-    {'placa': None, 'operador_id': 1},
-    {'placa': 'TEST', 'operador_id': 0},
-    {'placa': 'TEST', 'operador_id': True},
-    {'placa': 'TEST', 'operador_id': '1'},
-    {'placa': 'TEST', 'operador_id': None},
-    {'placa': 'TEST', 'operador_id': 9223372036854775808},
-    {'placa': 'TEST', 'operador_id': 1, 'entrada': '2026-01-01'},
-    # RN-ENT-05: el operador ya no elige la celda; enviarla es inválido.
-    {'placa': 'TEST', 'operador_id': 1, 'celda_id': 1},
+    {'placa': ' ', 'usuario_id': 1},
+    {'placa': None, 'usuario_id': 1},
+    {'placa': 'TEST', 'usuario_id': 0},
+    {'placa': 'TEST', 'usuario_id': True},
+    {'placa': 'TEST', 'usuario_id': '1'},
+    {'placa': 'TEST', 'usuario_id': None},
+    {'placa': 'TEST', 'usuario_id': 9223372036854775808},
+    {'placa': 'TEST', 'usuario_id': 1, 'entrada': '2026-01-01'},
+    # RN-ENT-05: el usuario ya no elige la celda; enviarla es inválido.
+    {'placa': 'TEST', 'usuario_id': 1, 'celda_id': 1},
+    # El cuerpo ya no acepta el nombre anterior del campo.
+    {'placa': 'TEST', 'operador_id': 1},
 ])
 def test_entrada_invalida(payload):
     with TestClient(app) as client:
         assert client.post('/estancias/entrada', json=payload).status_code == 422
 
 
-def test_entrada_valida_solo_con_placa_y_operador():
-    data = EntradaCrear(placa=' abc123 ', operador_id=1)
-    assert data.model_dump() == {'placa': 'ABC123', 'operador_id': 1}
+def test_entrada_valida_solo_con_placa_y_usuario():
+    data = EntradaCrear(placa=' abc123 ', usuario_id=1)
+    assert data.model_dump() == {'placa': 'ABC123', 'usuario_id': 1}
 
 
 def test_salida_no_admite_celda_ni_fecha():
     with TestClient(app) as client:
         for extra in ({'celda_id': 1}, {'salida': '2026-01-01'}, {'id': 1}):
-            assert client.post('/estancias/salida', json={'placa': 'TEST', 'operador_id': 1, **extra}).status_code == 422
+            assert client.post('/estancias/salida', json={'placa': 'TEST', 'usuario_id': 1, **extra}).status_code == 422
         assert client.get('/estancias/vehiculo/%20%20').status_code == 422
 
 
@@ -65,5 +67,5 @@ def test_cambio_de_celda_exige_placa_y_celda():
     with TestClient(app) as client:
         for payload in ({}, {'placa': 'TEST'}, {'celda_id': 1},
                         {'placa': 'TEST', 'celda_id': 0},
-                        {'placa': 'TEST', 'celda_id': 1, 'operador_id': 1}):
+                        {'placa': 'TEST', 'celda_id': 1, 'usuario_id': 1}):
             assert client.post('/estancias/cambiar-celda', json=payload).status_code == 422

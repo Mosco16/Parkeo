@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.config import ZONA_HORARIA
-from app.models import Celda, Estancia, Operador, Vehiculo, required_text
+from app.models import Celda, Estancia, Usuario, Vehiculo, required_text
 from app.schemas.celda import CeldaRespuesta
 from app.schemas.estancia import (
     CambioCeldaCrear,
@@ -85,11 +85,11 @@ class ServicioEstancia:
             raise EstanciaError(404, "Vehículo no encontrado.")
         return vehiculo
 
-    def _operador(self, operador_id: int) -> Operador:
-        operador = self.session.get(Operador, operador_id)
-        if operador is None:
-            raise EstanciaError(404, "Operador no encontrado.")
-        return operador
+    def _usuario(self, usuario_id: int) -> Usuario:
+        usuario = self.session.get(Usuario, usuario_id)
+        if usuario is None:
+            raise EstanciaError(404, "Usuario no encontrado.")
+        return usuario
 
     def _celda_libre(self, tipo: str, bloquear: bool):
         # Una celda está libre si no tiene estancia abierta (RN-CEL-03).
@@ -112,7 +112,7 @@ class ServicioEstancia:
     @transaccion
     def entrada(self, data: EntradaCrear) -> EstanciaAbiertaRespuesta:
         vehiculo = self._vehiculo(data.placa)
-        operador = self._operador(data.operador_id)
+        usuario = self._usuario(data.usuario_id)
 
         if mensualidad(vehiculo) == "VENCIDA":
             raise EstanciaError(409, "Pago pendiente: la mensualidad está vencida.")
@@ -139,7 +139,7 @@ class ServicioEstancia:
                     estancia = Estancia(
                         vehiculo_id=vehiculo.id,
                         celda_id=celda.id,
-                        operador_entrada_id=operador.id,
+                        usuario_entrada_id=usuario.id,
                         entrada=datetime.now(timezone.utc),
                     )
                     self.session.add(estancia)
@@ -161,7 +161,7 @@ class ServicioEstancia:
     @transaccion
     def salida(self, data: SalidaCrear) -> EstanciaRespuesta:
         vehiculo = self._vehiculo(data.placa)
-        operador = self._operador(data.operador_id)
+        usuario = self._usuario(data.usuario_id)
         # PostgreSQL vuelve a evaluar salida IS NULL tras esperar el bloqueo.
         estancia = self.session.scalar(
             select(Estancia)
@@ -171,7 +171,7 @@ class ServicioEstancia:
         if estancia is None:
             raise EstanciaError(409, "El vehículo no tiene una entrada abierta.")
         try:
-            estancia.cerrar(datetime.now(timezone.utc), operador)
+            estancia.cerrar(datetime.now(timezone.utc), usuario)
         except ValueError:
             raise EstanciaError(409, "No se puede cerrar la estancia con su estado o fecha actuales.") from None
         self.session.flush()
