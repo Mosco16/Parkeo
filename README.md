@@ -1,8 +1,12 @@
-# Autos Colombia
+<p align="center">
+  <img src="frontend/public/parkeo-logo.jpeg" alt="Parkeo — Encuentra tu espacio" width="460">
+</p>
 
-Aplicación de ejemplo para administrar el parqueadero de una empresa: vehículos
-y mensualidad, operadores, celdas y el control diario de entradas, salidas y
-cambios de celda.
+# Parkeo
+
+Sistema de gestión de parqueadero para Autos Colombia: vehículos y mensualidad,
+cuentas internas con roles, celdas, control diario de entradas y salidas, cambios
+de celda con historial y panel de ocupación.
 
 - **Backend:** FastAPI, SQLAlchemy y PostgreSQL, con migraciones Alembic.
 - **Frontend:** Angular 22 con componentes standalone, formularios reactivos y
