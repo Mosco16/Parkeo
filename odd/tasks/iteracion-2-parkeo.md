@@ -209,11 +209,11 @@ Credenciales de demostración (solo desarrollo, documentadas en README):
 
 | # | Tarea | Specs | Commit |
 |---|---|---|---|
-| T1 | Renombrar carpeta/repositorio a Parkeo, copiar logo, crear rama y este plan | S1 | `docs: renombra el proyecto a Parkeo y agrega el logo` |
-| T2 | Seguridad: bcrypt, JWT, dependencias, configuración | S2 | `feat(backend): agrega utilidades de seguridad y configuracion de sesion` |
-| T3 | Migración 0005, modelo `Usuario`, backfill y script de admin | S2, S4 | `feat(backend): migra operadores a usuarios con rol y credenciales` |
-| T4 | `/auth/login`, `/auth/me`, dependencias de rol, proteger routers | S2, S3 | `feat(backend): implementa inicio de sesion y proteccion por rol` |
-| T5 | Entrada/salida con usuario autenticado; pruebas actualizadas | S7 | `refactor(backend): relaciona entradas y salidas con el usuario de la sesion` |
+| T1 | Renombrar carpeta/repositorio a Parkeo, copiar logo, crear rama y este plan | S1 | ✅ `4ab7065` `docs: renombra el proyecto a Parkeo y agrega el logo` |
+| T2 | Seguridad: bcrypt, JWT, dependencias, configuración | S2 | ✅ `dc28db4` `feat(backend): agrega utilidades de seguridad y configuracion de sesion` |
+| T3 | Migración 0005, modelo `Usuario`, backfill y script de admin | S2, S4 | ✅ `401d1ce` `feat(backend): migra operadores a usuarios con rol y credenciales` |
+| T4 | `/auth/login`, `/auth/me`, dependencias de rol, proteger routers | S2, S3 | ✅ `f3a07d3` `feat(backend): implementa inicio de sesion y proteccion por rol` |
+| T5 | Entrada/salida con usuario autenticado; pruebas actualizadas | S7 | ✅ `a64933b` `refactor(backend): relaciona entradas y salidas con el usuario de la sesion` |
 | T6 | CRUD de cuentas de operador, estado y restablecimiento | S4 | `feat(backend): gestiona cuentas de operador` |
 | T7 | Migración 0006, `activa`, disponibilidad de 3 estados, toggle | S5 | `feat(backend): agrega mantenimiento de celdas y disponibilidad por estado` |
 | T8 | Migración 0007, historial en cambio de celda, endpoint | S6 | `feat(backend): registra el historial de cambios de celda` |
@@ -272,3 +272,47 @@ PostgreSQL habilitado.
 ### L5 — Pendiente de confirmación
 - Autorización expresa para aplicar las migraciones `0005`–`0007` a la base local (Docker ya está arriba).
 - Decisión de push a `origin` al terminar (los commits se hacen igual en local).
+
+### L6 — Avance backend (5 nov 2026)
+
+**T3 (`401d1ce`, 25 archivos, +1153/−589).**
+- Migración `0005_usuarios_y_autenticacion`: renombra `operador`→`usuario` y las FKs de
+  `estancia` con `ALTER TABLE ... RENAME` (sin recrear tablas ni perder datos); agrega
+  `documento`, `usuario`, `password_hash`, `rol`, `activo`, `correo`, `direccion`,
+  `creado_en`, `actualizado_en`; backfill de cuentas existentes con rol `OPERADOR` y hash
+  temporal de `Parkeo2026*`; únicos y checks de normalización.
+- Modelo `Usuario` (`es_administrador()`), esquemas, servicio y router `/usuarios`, y
+  `scripts/cargar_datos_demo.py` siembra la cuenta `admin`.
+- `tests/test_migracion_0005.py` valida el SQL offline de upgrade y downgrade sin abrir
+  conexión ni tocar datos.
+- Evidencia: `pip check` OK; **136 passed / 25 skipped**.
+
+**T4 (`f3a07d3`, 22 archivos, +595/−29).**
+- `POST /auth/login` (JWT HS256, 8 h) devuelve `access_token`, `token_type` y el usuario con
+  su rol; `GET /auth/me` revalida la cuenta en cada petición.
+- Contraseña incorrecta y usuario inexistente comparten `401` genérico y costo bcrypt
+  equivalente (`_hash_ficticio`); la verificación de contraseña ocurre antes del estado de
+  la cuenta, así una cuenta inactiva con clave errónea no revela que existe.
+- `app/dependencies.py`: `usuario_actual`, `requiere_administrador` y los alias
+  `UsuarioAutenticado`/`Administrador`; todos los routers quedan protegidos salvo `/health`
+  y `/auth/login`. Escrituras de celdas y `/usuarios` exigen administrador.
+- `tests/conftest.py` centraliza `usuario_de_prueba`, `token_para` y `encabezado`.
+- Evidencia: `pip check` OK; `test_security.py` + `test_auth.py` 41 passed; **173 passed /
+  25 skipped**.
+
+**T5 (`a64933b`, 9 archivos, +43/−54).**
+- `EntradaCrear` y `SalidaCrear` dejan de aceptar `usuario_id`; `entrada(data, usuario)` y
+  `salida(data, usuario)` reciben el `Usuario` de la sesión y lo escriben en
+  `usuario_entrada_id` / `usuario_salida_id`. Un cuerpo manipulado ya no puede atribuir un
+  movimiento a otra cuenta.
+- Pruebas de API, escenarios, disponibilidad, concurrencia y PostgreSQL actualizadas. Se
+  retiraron 4 casos parametrizados que ya no aplican (`usuario_id` inválido en el cuerpo) y
+  el caso de salida con usuario inexistente; el resto de rechazos se conserva.
+- Evidencia: `pip check` OK; **169 passed / 25 skipped**.
+
+**Notas de proceso.**
+- Los mensajes de commit se escriben con `UTF8Encoding($false)`: `Out-File -Encoding utf8` de
+  PowerShell 5.1 agrega BOM al asunto (se corrigió con `--amend` una vez).
+- `.atl/` y `.engram/` siguen sin versionar a propósito.
+- Siguiente: T6 (verificar/cerrar el CRUD de cuentas y sus pruebas), T7 y T8; las pruebas de
+  PostgreSQL quedan pendientes de autorización para aplicar `0005`–`0007`.
