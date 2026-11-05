@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_session
-from app.dependencies import usuario_actual
+from app.dependencies import UsuarioAutenticado, usuario_actual
 from app.schemas.estancia import (
     CambioCeldaCrear,
     EntradaCrear,
@@ -21,13 +21,17 @@ DatabaseSession = Annotated[Session, Depends(get_session)]
 
 
 @router.post("/entrada", response_model=EstanciaAbiertaRespuesta, status_code=201)
-def entrada(data: EntradaCrear, session: DatabaseSession) -> EstanciaAbiertaRespuesta:
-    return ServicioEstancia(session).entrada(data)
+def entrada(
+    data: EntradaCrear, session: DatabaseSession, usuario: UsuarioAutenticado
+) -> EstanciaAbiertaRespuesta:
+    return ServicioEstancia(session).entrada(data, usuario)
 
 
 @router.post("/salida", response_model=EstanciaRespuesta)
-def salida(data: SalidaCrear, session: DatabaseSession) -> EstanciaRespuesta:
-    return ServicioEstancia(session).salida(data)
+def salida(
+    data: SalidaCrear, session: DatabaseSession, usuario: UsuarioAutenticado
+) -> EstanciaRespuesta:
+    return ServicioEstancia(session).salida(data, usuario)
 
 
 @router.post("/cambiar-celda", response_model=EstanciaAbiertaRespuesta)

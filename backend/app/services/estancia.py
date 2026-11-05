@@ -85,12 +85,6 @@ class ServicioEstancia:
             raise EstanciaError(404, "Vehículo no encontrado.")
         return vehiculo
 
-    def _usuario(self, usuario_id: int) -> Usuario:
-        usuario = self.session.get(Usuario, usuario_id)
-        if usuario is None:
-            raise EstanciaError(404, "Usuario no encontrado.")
-        return usuario
-
     def _celda_libre(self, tipo: str, bloquear: bool):
         # Una celda está libre si no tiene estancia abierta (RN-CEL-03).
         ocupada = (
@@ -110,9 +104,8 @@ class ServicioEstancia:
         return self.session.scalar(query)
 
     @transaccion
-    def entrada(self, data: EntradaCrear) -> EstanciaAbiertaRespuesta:
+    def entrada(self, data: EntradaCrear, usuario: Usuario) -> EstanciaAbiertaRespuesta:
         vehiculo = self._vehiculo(data.placa)
-        usuario = self._usuario(data.usuario_id)
 
         if mensualidad(vehiculo) == "VENCIDA":
             raise EstanciaError(409, "Pago pendiente: la mensualidad está vencida.")
@@ -159,9 +152,8 @@ class ServicioEstancia:
         )
 
     @transaccion
-    def salida(self, data: SalidaCrear) -> EstanciaRespuesta:
+    def salida(self, data: SalidaCrear, usuario: Usuario) -> EstanciaRespuesta:
         vehiculo = self._vehiculo(data.placa)
-        usuario = self._usuario(data.usuario_id)
         # PostgreSQL vuelve a evaluar salida IS NULL tras esperar el bloqueo.
         estancia = self.session.scalar(
             select(Estancia)

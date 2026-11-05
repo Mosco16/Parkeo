@@ -72,8 +72,7 @@ def test_estado_cambia_con_la_estancia_abierta(datos):
         assert antes[d['celdas'][0]]['estado'] == 'LIBRE'
         cupo_antes = cuerpo['cupo']['AUTO']
 
-        entrada = client.post('/estancias/entrada',
-                              json={'placa': d['placa'], 'usuario_id': d['usuario']})
+        entrada = client.post('/estancias/entrada', json={'placa': d['placa']})
         assert entrada.status_code == 201
         celda = entrada.json()['celda']['id']
 
@@ -83,7 +82,7 @@ def test_estado_cambia_con_la_estancia_abierta(datos):
         assert cuerpo['cupo']['AUTO']['libres'] == cupo_antes['libres'] - 1
 
         assert client.post('/estancias/salida',
-                           json={'placa': d['placa'], 'usuario_id': d['usuario']}).status_code == 200
+                           json={'placa': d['placa']}).status_code == 200
         cuerpo, liberada = mapa(client)
         assert liberada[celda]['estado'] == 'LIBRE'
         assert cuerpo['cupo']['AUTO'] == cupo_antes

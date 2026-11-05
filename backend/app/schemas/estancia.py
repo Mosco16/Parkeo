@@ -14,13 +14,11 @@ class EntradaCrear(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     placa: Placa
-    usuario_id: Identificador
 
 
 class SalidaCrear(BaseModel):
     model_config = ConfigDict(extra="forbid")
     placa: Placa
-    usuario_id: Identificador
 
 
 class CambioCeldaCrear(BaseModel):

@@ -97,7 +97,7 @@ def datos():
 
 
 def entrada(d, clave='auto'):
-    return {'placa': d['placas'][clave], 'usuario_id': d['usuario']}
+    return {'placa': d['placas'][clave]}
 
 
 def abiertas(d, clave='auto'):
@@ -224,7 +224,7 @@ def test_e08_placa_no_registrada(datos):
     with TestClient(app) as client:
         result = client.post(
             '/estancias/entrada',
-            json={'placa': 'INEXISTENTE-' + uuid4().hex, 'usuario_id': d['usuario']},
+            json={'placa': 'INEXISTENTE-' + uuid4().hex},
         )
         assert result.status_code == 404
         assert result.json()['detail'] == NO_ENCONTRADO

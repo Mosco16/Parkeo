@@ -137,7 +137,7 @@ def test_e15_dos_entradas_simultaneas_toman_celdas_distintas(datos):
     def entrar(placa):
         with TestClient(app) as client:
             respuesta = client.post(
-                '/estancias/entrada', json={'placa': placa, 'usuario_id': d['usuario']}
+                '/estancias/entrada', json={'placa': placa}
             )
             return respuesta.status_code, respuesta.json()
 

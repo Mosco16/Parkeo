@@ -83,7 +83,7 @@ def datos():
 
 
 def entrada(d, clave='auto'):
-    return {'placa': d['placas'][clave], 'usuario_id': d['usuario']}
+    return {'placa': d['placas'][clave]}
 
 
 def estado(d, clave='auto'):
