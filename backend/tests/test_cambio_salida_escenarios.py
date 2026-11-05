@@ -12,8 +12,11 @@ from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session
 
 from app.database import get_engine
+from app.dependencies import usuario_actual
 from app.main import app
 from app.models import Celda, Estancia, Usuario, Vehiculo
+
+from conftest import usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -60,9 +63,13 @@ def datos():
             'celdas': [c.id for c in celdas],
             'usuario': usuario.id,
         }
+    app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+        id=data['usuario'], rol='OPERADOR'
+    )
     try:
         yield data
     finally:
+        app.dependency_overrides.pop(usuario_actual, None)
         with Session(engine) as s, s.begin():
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(data['vehiculos'])))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(data['vehiculos'])))

@@ -2,8 +2,11 @@ from fastapi.testclient import TestClient
 import pytest
 
 from app.database import get_session
+from app.dependencies import usuario_actual
 from app.main import app
 from app.schemas.estancia import EntradaCrear
+
+from conftest import usuario_de_prueba
 
 
 @pytest.fixture(autouse=True)
@@ -14,10 +17,14 @@ def sin_postgres():
         yield object()
 
     app.dependency_overrides[get_session] = sesion_simulada
+    # La sesión y los permisos tienen sus propias pruebas en test_auth.py;
+    # aquí solo interesa la validación del cuerpo.
+    app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba()
     try:
         yield
     finally:
         app.dependency_overrides.pop(get_session, None)
+        app.dependency_overrides.pop(usuario_actual, None)
 
 
 def test_openapi_y_salud():

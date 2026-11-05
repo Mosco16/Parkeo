@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_session
+from app.dependencies import usuario_actual
 from app.schemas.estancia import (
     CambioCeldaCrear,
     EntradaCrear,
@@ -15,7 +16,7 @@ from app.schemas.estancia import (
 from app.schemas.vehiculo import Placa
 from app.services.estancia import ServicioEstancia
 
-router = APIRouter(prefix="/estancias", tags=["Estancias"])
+router = APIRouter(prefix="/estancias", tags=["Estancias"], dependencies=[Depends(usuario_actual)])
 DatabaseSession = Annotated[Session, Depends(get_session)]
 
 

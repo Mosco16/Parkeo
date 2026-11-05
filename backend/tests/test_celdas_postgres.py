@@ -9,7 +9,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_engine, get_session
+from app.dependencies import usuario_actual
 from app.main import app
+
+from conftest import usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(os.getenv("RUN_POSTGRES_TESTS") != "1", reason="Requiere PostgreSQL local.")
 
@@ -51,6 +54,9 @@ def test_crud_celdas(connection):
         def override():
             yield session
         app.dependency_overrides[get_session] = override
+        app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+            rol='ADMINISTRADOR'
+        )
         try:
             with TestClient(app) as client:
                 code = 'CELL-' + uuid4().hex.upper()
@@ -79,3 +85,4 @@ def test_crud_celdas(connection):
                 assert client.get('/health').json() == {'status':'ok'}
         finally:
             app.dependency_overrides.pop(get_session, None)
+            app.dependency_overrides.pop(usuario_actual, None)

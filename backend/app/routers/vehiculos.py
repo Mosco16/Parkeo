@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_session
+from app.dependencies import usuario_actual
 from app.schemas.vehiculo import VehiculoActualizar, VehiculoCrear, VehiculoRespuesta, VehiculosPagina
 from app.services import vehiculo as service
 
-router = APIRouter(prefix="/vehiculos", tags=["Vehículos"])
+router = APIRouter(prefix="/vehiculos", tags=["Vehículos"], dependencies=[Depends(usuario_actual)])
 DatabaseSession = Annotated[Session, Depends(get_session)]
 VehicleId = Annotated[int, Path(ge=1, le=9223372036854775807)]
 

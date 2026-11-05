@@ -8,8 +8,11 @@ from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.database import get_engine, get_session
+from app.dependencies import usuario_actual
 from app.main import app
 from app.models import Usuario
+
+from conftest import usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_POSTGRES_TESTS") != "1", reason="Requiere PostgreSQL local."
@@ -50,6 +53,9 @@ def test_usuarios_structure_and_crud():
                     yield session
 
                 app.dependency_overrides[get_session] = override
+                app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+                    rol="ADMINISTRADOR"
+                )
                 with TestClient(app) as client:
                     initial = client.get("/usuarios").json()
                     assert initial["offset"] == 0 and initial["limit"] == 20

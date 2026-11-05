@@ -1,5 +1,4 @@
 """Errores HTTP y rollback del módulo de usuarios sin depender de PostgreSQL."""
-from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,33 +7,15 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.database import get_session
 from app.main import app
-from app.models import Usuario
 from app.schemas.usuario import UsuarioCrear
 
-
-def usuario_de_prueba(**cambios) -> Usuario:
-    datos = {
-        "id": 1,
-        "documento": "1001",
-        "nombre": "Prueba",
-        "telefono": "001",
-        "usuario": "prueba",
-        "password_hash": "hash-de-prueba",
-        "rol": "OPERADOR",
-        "activo": True,
-        "correo": None,
-        "direccion": None,
-        "creado_en": datetime(2026, 1, 1, tzinfo=timezone.utc),
-        "actualizado_en": datetime(2026, 1, 1, tzinfo=timezone.utc),
-    }
-    datos.update(cambios)
-    return Usuario(**datos)
+from conftest import token_para, usuario_de_prueba
 
 
 @pytest.fixture
 def api():
     session = MagicMock()
-    session.get.return_value = usuario_de_prueba()
+    session.get.return_value = usuario_de_prueba(rol="ADMINISTRADOR")
 
     def override():
         yield session
@@ -42,6 +23,7 @@ def api():
     app.dependency_overrides[get_session] = override
     try:
         with TestClient(app) as client:
+            client.headers["Authorization"] = f"Bearer {token_para(1, 'ADMINISTRADOR')}"
             yield client, session
     finally:
         app.dependency_overrides.pop(get_session, None)

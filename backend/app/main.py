@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from app.routers.auth import router as auth_router
+from app.services.auth import AuthError
 from app.routers.vehiculos import router as vehiculos_router
 from app.services.vehiculo import VehiculoError
 from app.routers.celdas import router as celdas_router
@@ -11,10 +13,19 @@ from app.routers.estancias import router as estancias_router
 from app.services.estancia import EstanciaError
 
 app = FastAPI(title="Parkeo API")
+app.include_router(auth_router)
 app.include_router(vehiculos_router)
 app.include_router(celdas_router)
 app.include_router(usuarios_router)
 app.include_router(estancias_router)
+
+
+@app.exception_handler(AuthError)
+async def auth_error_handler(request, error: AuthError) -> JSONResponse:
+    headers = {"WWW-Authenticate": "Bearer"} if error.status_code == 401 else None
+    return JSONResponse(
+        status_code=error.status_code, content={"detail": error.detail}, headers=headers
+    )
 
 
 @app.exception_handler(VehiculoError)

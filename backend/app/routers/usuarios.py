@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_session
+from app.dependencies import requiere_administrador
 from app.schemas.usuario import (
     EstadoUsuario,
     RestablecerPassword,
@@ -14,7 +15,11 @@ from app.schemas.usuario import (
 )
 from app.services import usuario as service
 
-router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
+router = APIRouter(
+    prefix="/usuarios",
+    tags=["Usuarios"],
+    dependencies=[Depends(requiere_administrador)],
+)
 DatabaseSession = Annotated[Session, Depends(get_session)]
 UsuarioId = Annotated[int, Path(ge=1, le=9223372036854775807)]
 

@@ -39,3 +39,31 @@ def test_token_contiene_identidad_y_rol():
 def test_token_invalido_devuelve_none():
     assert decode_access_token("no-es-un-token") is None
     assert decode_access_token("") is None
+
+
+def test_token_expirado_devuelve_none():
+    from datetime import datetime, timedelta, timezone
+
+    import jwt as pyjwt
+
+    from app import security
+
+    ajustes = security._SETTINGS
+    vencido = pyjwt.encode(
+        {
+            "sub": "1",
+            "exp": datetime.now(timezone.utc) - timedelta(seconds=1),
+        },
+        ajustes.secret_key,
+        algorithm=ajustes.algorithm,
+    )
+
+    assert decode_access_token(vencido) is None
+
+
+def test_token_firmado_con_otra_clave_devuelve_none():
+    import jwt as pyjwt
+
+    ajeno = pyjwt.encode({"sub": "1"}, "otra-clave-distinta-de-32-bytes-o-mas", algorithm="HS256")
+
+    assert decode_access_token(ajeno) is None
