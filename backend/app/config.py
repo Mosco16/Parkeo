@@ -1,6 +1,7 @@
 """Configuración privada desde backend/.env y variables de entorno."""
 
 import os
+import secrets
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -24,6 +25,14 @@ class DatabaseSettings:
     user: str = field(repr=False)
     password: str = field(repr=False)
     connect_timeout: int = 5
+
+
+@dataclass(frozen=True)
+class SecuritySettings:
+    secret_key: str = field(repr=False)
+    algorithm: str = "HS256"
+    expiration_hours: int = 8
+    ephemeral: bool = False
 
 
 def load_database_settings() -> DatabaseSettings:
@@ -55,3 +64,22 @@ def load_database_settings() -> DatabaseSettings:
         password=values["DB_PASSWORD"],
         connect_timeout=positive_integer("DB_CONNECT_TIMEOUT", 60),
     )
+
+
+def load_security_settings() -> SecuritySettings:
+    """Lee la clave JWT; si falta, genera una efímera solo para desarrollo."""
+    values = {**dotenv_values(ENV_FILE, encoding="utf-8-sig", interpolate=False), **os.environ}
+    secret = (values.get("JWT_SECRET") or "").strip()
+    provided = bool(secret) and not secret.startswith("CAMBIAR_")
+    if not provided:
+        secret = secrets.token_urlsafe(48)
+
+    raw_hours = (values.get("JWT_EXPIRATION_HOURS") or "8").strip()
+    try:
+        hours = int(raw_hours)
+    except (ValueError, TypeError):
+        raise ConfigurationError("JWT_EXPIRATION_HOURS debe ser un entero válido.") from None
+    if not 1 <= hours <= 168:
+        raise ConfigurationError("JWT_EXPIRATION_HOURS debe estar entre 1 y 168.")
+
+    return SecuritySettings(secret_key=secret, expiration_hours=hours, ephemeral=not provided)
