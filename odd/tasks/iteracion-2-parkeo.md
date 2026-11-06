@@ -217,9 +217,9 @@ Credenciales de demostración (solo desarrollo, documentadas en README):
 | T6 | CRUD de cuentas de operador, estado y restablecimiento | S4 | ✅ `4b91d46` `test(backend): cubre la gestion de cuentas de operador` |
 | T7 | Migración 0006, `activa`, disponibilidad de 3 estados, toggle | S5 | ✅ `10b589f` `feat(backend): agrega mantenimiento de celdas y disponibilidad por estado` |
 | T8 | Migración 0007, historial en cambio de celda, endpoint | S6 | ✅ `124ff7f` `feat(backend): registra el historial de cambios de celda` |
-| T9 | Frontend auth: servicio, interceptor, guards, login, quitar selector | S2, S3 | `feat(frontend): agrega inicio de sesion y rutas protegidas` |
-| T10 | Shell, sidebar, topbar, tema y rebranding | S1, S3 | `feat(frontend): aplica la identidad visual y el menu por rol` |
-| T11 | Dashboard con KPIs, mapa, accesos rápidos y perfiles | S8 | `feat(frontend): agrega el panel de resumen del parqueadero` |
+| T9 | Frontend auth: servicio, interceptor, guards, login, quitar selector | S2, S3 | ✅ `59e3eac` `feat(frontend): agrega inicio de sesion y rutas protegidas` |
+| T10 | Shell, sidebar, topbar, tema y rebranding | S1, S3 | ✅ `172b730` `feat(frontend): aplica la identidad visual y el menu por rol` |
+| T11 | Dashboard con KPIs, mapa, accesos rápidos y perfiles | S8 | ✅ `1d4eab0` `feat(frontend): agrega el panel de resumen del parqueadero` |
 | T12 | Gestión de usuarios (listar, crear, editar, estado, reset) | S4 | `feat(frontend): administra cuentas de operador` |
 | T13 | Gestión de celdas (mapa + mantenimiento) | S5 | `feat(frontend): administra el mantenimiento de celdas` |
 | T14 | Historial de cambios | S6, S9 | `feat(frontend): consulta el historial de cambios de celda` |
@@ -348,3 +348,32 @@ PostgreSQL habilitado.
 historial y adaptación de las pantallas de operación) y T16 (datos demo y documentación).
 Sigue pendiente la autorización expresa para aplicar `0005`–`0007` a la base local y correr
 las pruebas de PostgreSQL con `RUN_POSTGRES_TESTS=1`.
+
+### L8 — Frontend: autenticación, identidad y panel (5 nov 2026)
+
+**T9 (`59e3eac`, 19 archivos, +1038/−500).**
+- `SesionUsuario` guarda token JWT y usuario en `sessionStorage` (`parkeo.sesion`), restaura la
+  sesión al recargar y la limpia ante `401`. `AuthService` consume `/auth/login` y `/auth/me`.
+- `authInterceptor` añade `Authorization: Bearer`; los guards `sesionActiva` y
+  `soloAdministrador` protegen las rutas internas. `/gestion/celdas` queda solo para admin.
+- `/login` reemplaza la selección manual de operador; se elimina `seleccion-operador/`.
+- Evidencia: build OK; **71 pruebas frontend**.
+
+**T10 (`172b730`, 22 archivos, +691/−332).**
+- Shell con barra lateral (Inicio, Operación, Vehículos y Celdas para admin), barra superior con
+  breadcrumb «Autos Colombia · Sede principal», sesión con nombre/rol y pie. Por debajo de
+  900 px la barra lateral se abre como panel deslizante con fondo de cierre.
+- Paleta Parkeo (`--parkeo-*` en `styles.css`) y remapeo mecánico de la paleta verde; títulos de
+  pestaña, rutas y encabezados visibles pasan a Parkeo.
+- Evidencia: build sin warnings; **75 pruebas frontend**.
+
+**T11 (`1d4eab0`, 21 archivos, +811/−437).**
+- `/` pasa a ser el panel autenticado: KPIs de ocupadas/disponibles/mantenimiento/total,
+  porcentaje de ocupación, mapa agrupado por AUTO/MOTO con los tres estados y placa en las
+  celdas ocupadas, accesos rápidos, perfiles del sistema y chip de estado de la API.
+- `GET /celdas/disponibilidad` incluye `placa` (solo en ocupadas) para alimentar el mapa.
+- Se elimina `home/`; el tablero y el cambio de celda adoptan los tres estados y la placa.
+- Evidencia: SQL sin cambios; **205 passed / 26 skipped**; build OK; **75 pruebas frontend**.
+
+**Pendiente de T12.** El acceso rápido «crear cuenta» del mockup se agrega junto con la ruta
+`/gestion/usuarios` para no enlazar una pantalla inexistente.
