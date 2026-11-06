@@ -220,11 +220,11 @@ Credenciales de demostración (solo desarrollo, documentadas en README):
 | T9 | Frontend auth: servicio, interceptor, guards, login, quitar selector | S2, S3 | ✅ `59e3eac` `feat(frontend): agrega inicio de sesion y rutas protegidas` |
 | T10 | Shell, sidebar, topbar, tema y rebranding | S1, S3 | ✅ `172b730` `feat(frontend): aplica la identidad visual y el menu por rol` |
 | T11 | Dashboard con KPIs, mapa, accesos rápidos y perfiles | S8 | ✅ `1d4eab0` `feat(frontend): agrega el panel de resumen del parqueadero` |
-| T12 | Gestión de usuarios (listar, crear, editar, estado, reset) | S4 | `feat(frontend): administra cuentas de operador` |
-| T13 | Gestión de celdas (mapa + mantenimiento) | S5 | `feat(frontend): administra el mantenimiento de celdas` |
-| T14 | Historial de cambios | S6, S9 | `feat(frontend): consulta el historial de cambios de celda` |
-| T15 | Adaptar entrada, salida y cambio de celda a la sesión | S7 | `refactor(frontend): adapta la operacion a la sesion autenticada` |
-| T16 | Datos demo, README, AGENTS y verificación final | S10 | `chore: actualiza datos de demostracion y documentacion de Parkeo` |
+| T12 | Gestión de usuarios (listar, crear, editar, estado, reset) | S4 | ✅ `7c573c2` `feat(frontend): administra cuentas de operador` |
+| T13 | Gestión de celdas (mapa + mantenimiento) | S5 | ✅ `cacd7a6` `feat(frontend): administra el mantenimiento de celdas` |
+| T14 | Historial de cambios | S6, S9 | ✅ `e3829a2` `feat(frontend): consulta el historial de cambios de celda` |
+| T15 | Adaptar entrada, salida y cambio de celda a la sesión | S7 | ✅ `0ea8848` `refactor(frontend): registra entradas y salidas con el usuario de la sesion` |
+| T16 | Datos demo, README, AGENTS y verificación final | S10 | ✅ `c6cbdbf` `chore: actualiza datos de demostracion y documentacion de Parkeo` |
 
 Cada commit debe dejar build y pruebas en verde. El último incluye la corrida completa con
 PostgreSQL habilitado.
@@ -377,3 +377,42 @@ las pruebas de PostgreSQL con `RUN_POSTGRES_TESTS=1`.
 
 **Pendiente de T12.** El acceso rápido «crear cuenta» del mockup se agrega junto con la ruta
 `/gestion/usuarios` para no enlazar una pantalla inexistente.
+
+### L9 — Frontend completo: usuarios, celdas, historial, sesión y cierre de EA2 (6 nov 2026)
+
+**T12 (`7c573c2`, 10 archivos, +718/−389).**
+- Pantalla `/gestion/usuarios` reservada para administradores: listado paginado con documento, nombre,
+  usuario, teléfono y estado; alta de operadores con contraseña inicial; edición sin exponer la
+  contraseña; activación/desactivación sin borrado físico; y restablecimiento de contraseña.
+- Agregados enlaces de Usuarios en menú del shell y acceso rápido en el panel. Eliminado el componente
+  inactivo `operadores/`.
+- Evidencia: build sin warnings; **75 pruebas frontend**.
+
+**T13 (`cacd7a6`, 5 archivos, +261/−534).**
+- Pantalla `/gestion/celdas` adaptada como vista de mantenimiento: mapa por tipo con los tres estados y
+  la placa en ocupadas. Botón para alternar celdas entre disponibles y mantenimiento. Celdas ocupadas
+  quedan deshabilitadas para apagado. Retirados del servicio los métodos crear/editar/eliminar celda.
+- Evidencia: build sin warnings; **77 pruebas frontend**.
+
+**T14 (`e3829a2`, 9 archivos, +403/−1).**
+- Pantalla `/historial` para consultar el registro de cambios de celda (fecha/hora Bogotá, placa,
+  celda anterior, celda nueva y usuario responsable). Paginación con ajuste automático del offset
+  y estados de carga, vacío y reintento.
+- Agregado «Historial» al menú de operación en el shell para ambos roles.
+- Evidencia: build sin warnings; **82 pruebas frontend**.
+
+**T15 (`0ea8848`, 13 archivos, +52/−226).**
+- Se eliminó del frontend la selección manual de operador: `POST /estancias/entrada` y
+  `POST /estancias/salida` envían únicamente la placa, tomando el usuario del token JWT.
+- En las vistas se muestra «Usuario en sesión» en lugar de «Operador en turno».
+- Eliminados `SesionOperador`, `OperadoresService`, el modelo `Operador` y el guard `operadorActivo`.
+- Evidencia: build sin warnings; **79 pruebas frontend**.
+
+**T16 (`c6cbdbf`, 5 archivos, +254/−549).**
+- Actualizados `README.md`, `AGENTS.md`, `backend/README.md`, `frontend/README.md` y `proxy.conf.json`
+  para reflejar la identidad oficial Parkeo, los nuevos módulos, endpoints y flujos de trabajo.
+- Evidencia: backend **205 passed / 26 skipped**; frontend build limpio; **79 pruebas frontend**.
+
+**Estado general de la Iteración 2 (EA2):**
+Todas las tareas del plan T1–T16 quedaron completamente implementadas y cubiertas por pruebas unitarias
+y de contrato en verde. Los 16 commits de unidades de trabajo se encuentran en la rama local `iteracion-2-parkeo`.
