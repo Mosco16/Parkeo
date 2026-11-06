@@ -3,7 +3,6 @@ import { Vehiculo } from './vehiculo';
 
 export interface EntradaCrear {
   placa: string;
-  operador_id: number;
 }
 export interface CambioCeldaCrear {
   placa: string;
@@ -11,7 +10,6 @@ export interface CambioCeldaCrear {
 }
 export interface SalidaCrear {
   placa: string;
-  operador_id: number;
 }
 export interface Estancia {
   id: number;
@@ -19,8 +17,8 @@ export interface Estancia {
   celda_id: number;
   entrada: string;
   salida: string | null;
-  operador_entrada_id: number;
-  operador_salida_id: number | null;
+  usuario_entrada_id: number;
+  usuario_salida_id: number | null;
 }
 export interface EstanciaAbierta extends Estancia {
   celda: Celda;

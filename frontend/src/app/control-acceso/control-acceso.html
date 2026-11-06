@@ -7,8 +7,8 @@
     </div>
   </header>
 
-  @if (operador(); as activo) {
-    <p class="operator-line">Operador en turno: <strong>{{ activo.nombre }}</strong></p>
+  @if (usuario(); as activo) {
+    <p class="operator-line">Usuario en sesión: <strong>{{ activo.nombre }}</strong></p>
   }
 
   <section class="panel" aria-label="Consulta de placa">
@@ -97,7 +97,7 @@
             </div>
           </div>
         } @else {
-          <button type="button" (click)="abrirConfirmacion()" [disabled]="busy() || !operador()">
+          <button type="button" (click)="abrirConfirmacion()" [disabled]="busy()">
             Cerrar estancia anterior y registrar entrada de nuevo
           </button>
         }
@@ -120,7 +120,7 @@
           type="button"
           class="primary"
           (click)="confirmarEntrada()"
-          [disabled]="busy() || !operador()"
+          [disabled]="busy()"
         >
           Confirmar entrada
         </button>

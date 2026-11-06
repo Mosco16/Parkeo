@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EstadoVehiculo } from '../models/estancia';
 import { EstanciasService } from '../services/estancias.service';
-import { SesionOperador } from '../services/sesion-operador.service';
+import { SesionUsuario } from '../services/sesion-usuario.service';
 import { fechaBogota, fechaHoraBogota } from '../utils/fechas';
 import { mensajeApi } from '../utils/mensajes';
 
@@ -20,7 +20,7 @@ const placa = (value: string) => value.trim().toUpperCase();
 })
 export class ControlAcceso {
   private readonly api = inject(EstanciasService);
-  private readonly sesion = inject(SesionOperador);
+  private readonly sesion = inject(SesionUsuario);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
@@ -28,7 +28,7 @@ export class ControlAcceso {
   private readonly volverASalida = this.route.snapshot.queryParamMap.get('volver') === 'salida';
   private version = 0;
 
-  readonly operador = this.sesion.operador;
+  readonly usuario = this.sesion.usuario;
   readonly consulta = this.fb.group({
     placa: this.fb.nonNullable.control('', nonBlank),
   });
@@ -89,9 +89,8 @@ export class ControlAcceso {
   }
 
   confirmarEntrada(): void {
-    const operador = this.operador();
     const state = this.estado();
-    if (!operador || !state || this.busy()) return;
+    if (!state || this.busy()) return;
     if (
       state.esta_dentro ||
       state.mensualidad === 'VENCIDA' ||
@@ -103,7 +102,7 @@ export class ControlAcceso {
     this.errorConsulta.set('');
     this.aviso.set('');
     this.exitoEntrada.set('');
-    this.entradaNormal(state.vehiculo.placa, operador.id, false);
+    this.entradaNormal(state.vehiculo.placa, false);
   }
 
   abrirConfirmacion(): void {
@@ -121,9 +120,8 @@ export class ControlAcceso {
    * funciona, registra una entrada nueva. Nunca borra ni edita el historial.
    */
   corregirEntrada(): void {
-    const operador = this.operador();
     const state = this.estado();
-    if (!operador || !state?.esta_dentro || this.busy()) return;
+    if (!state?.esta_dentro || this.busy()) return;
     const placaActual = state.vehiculo.placa;
     this.saving.set(true);
     this.confirmando.set(false);
@@ -131,7 +129,7 @@ export class ControlAcceso {
     this.aviso.set('');
     this.exitoEntrada.set('');
     this.api
-      .salida({ placa: placaActual, operador_id: operador.id })
+      .salida({ placa: placaActual })
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe({
         next: () => {
@@ -150,7 +148,7 @@ export class ControlAcceso {
                   this.saving.set(false);
                   return;
                 }
-                this.entradaNormal(placaActual, operador.id, true);
+                this.entradaNormal(placaActual, true);
               },
               error: () => {
                 this.saving.set(false);
@@ -176,9 +174,9 @@ export class ControlAcceso {
     return fechaBogota(value);
   }
 
-  private entradaNormal(placaActual: string, operadorId: number, correccion: boolean): void {
+  private entradaNormal(placaActual: string, correccion: boolean): void {
     this.api
-      .entrada({ placa: placaActual, operador_id: operadorId })
+      .entrada({ placa: placaActual })
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe({
         next: (result) => {
