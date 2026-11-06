@@ -15,7 +15,7 @@
 .eyebrow {
   font-size: 11px;
   letter-spacing: 2px;
-  color: #526c60;
+  color: #5b6b7f;
   font-weight: 700;
 }
 h1 {
@@ -28,12 +28,12 @@ h2 {
   margin: 0;
 }
 p {
-  color: #586b60;
+  color: #5b6b7f;
   line-height: 1.6;
 }
 .panel {
   padding: 26px;
-  border: 1px solid #dce2dc;
+  border: 1px solid #dbe3ee;
   background: #fff;
   border-radius: 16px;
   margin-bottom: 24px;
@@ -49,22 +49,22 @@ select {
 }
 button {
   padding: 10px 14px;
-  border: 1px solid #c9d7ce;
-  color: #214c43;
+  border: 1px solid #c9d4e2;
+  color: #0e2a47;
   background: #fff;
   cursor: pointer;
   font-size: 14px;
 }
 button:hover:not(:disabled) {
-  background: #eef3ee;
+  background: #eef2f8;
 }
 button.primary {
-  background: #214c43;
+  background: #0e2a47;
   color: white;
-  border-color: #214c43;
+  border-color: #0e2a47;
 }
 button.primary:hover:not(:disabled) {
-  background: #163d34;
+  background: #0a1e33;
 }
 button.danger {
   background: #a03930;
@@ -81,7 +81,7 @@ button:disabled {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid #aa7b2e;
+  outline: 3px solid #94610e;
   outline-offset: 3px;
 }
 fieldset {
@@ -108,10 +108,10 @@ label {
 input,
 select {
   padding: 11px 12px;
-  border: 1px solid #b9c9bd;
+  border: 1px solid #c9d4e2;
   background: #fff;
   width: 100%;
-  color: #203a33;
+  color: #12263d;
 }
 [aria-invalid='true'] {
   border-color: #a03930;
@@ -132,8 +132,8 @@ select {
   font-size: 14px;
 }
 .success {
-  background: #e6f1e8;
-  color: #246044;
+  background: #e6eff8;
+  color: #163c63;
 }
 .error {
   background: #fff0ec;
@@ -148,7 +148,7 @@ select {
 }
 .count {
   margin-left: 8px;
-  background: #eef3ee;
+  background: #eef2f8;
   padding: 3px 9px;
   border-radius: 15px;
   font-size: 13px;
@@ -165,14 +165,14 @@ table {
 th,
 td {
   padding: 16px 12px;
-  border-bottom: 1px solid #e6ebe5;
+  border-bottom: 1px solid #e7ecf3;
   overflow-wrap: anywhere;
   max-width: 240px;
 }
 thead th {
-  color: #5d7063;
+  color: #64748b;
   font-weight: 500;
-  background: #f6f8f4;
+  background: #f4f7fb;
   white-space: nowrap;
 }
 .row-actions {
@@ -184,15 +184,15 @@ thead th {
 }
 .type-tag {
   font-size: 11px;
-  color: #365c4e;
-  background: #eef3ee;
+  color: #26456b;
+  background: #eef2f8;
   padding: 5px 8px;
   border-radius: 6px;
 }
 .pagination {
   margin-top: 24px;
   font-size: 13px;
-  color: #586b60;
+  color: #5b6b7f;
 }
 .empty {
   padding: 32px 0;
@@ -236,8 +236,8 @@ thead th {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #e3ece5;
-  color: #214c43;
+  background: #e3eaf4;
+  color: #0e2a47;
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.04em;

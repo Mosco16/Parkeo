@@ -30,9 +30,9 @@ describe('App', () => {
       ?.textContent?.trim();
   }
 
-  it('muestra el nombre y la descripción de Autos Colombia', () => {
+  it('muestra el nombre de Parkeo y la descripción', () => {
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('h1')?.textContent).toBe('Autos Colombia');
+    expect(element.querySelector('h1')?.textContent).toBe('Parkeo');
     expect(element.querySelector('.description')?.textContent).toBe(
       'Control de entradas y salidas de vehículos',
     );

@@ -1,16 +1,43 @@
+:root {
+  /* S1: paleta Parkeo */
+  --parkeo-azul: #0e2a47;
+  --parkeo-azul-oscuro: #0a1e33;
+  --parkeo-azul-medio: #163c63;
+  --parkeo-amarillo: #f5c242;
+  --parkeo-texto: #12263d;
+  --parkeo-texto-suave: #5b6b7f;
+  --parkeo-borde: #dbe3ee;
+  --parkeo-fondo: #f4f7fb;
+  --parkeo-superficie: #ffffff;
+  --parkeo-error: #b3261e;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: #f6f7f4;
-  color: #203a33;
+  background: var(--parkeo-fondo);
+  color: var(--parkeo-texto);
   font-family: 'Segoe UI', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-a:focus-visible {
-  outline: 3px solid #94610e;
-  outline-offset: 6px;
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--parkeo-amarillo);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

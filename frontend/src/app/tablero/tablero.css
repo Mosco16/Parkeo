@@ -11,7 +11,7 @@
 .eyebrow {
   font-size: 11px;
   letter-spacing: 2px;
-  color: #526c60;
+  color: #5b6b7f;
   font-weight: 700;
 }
 h1 {
@@ -24,12 +24,12 @@ h2 {
   margin: 0 0 6px;
 }
 p {
-  color: #586b60;
+  color: #5b6b7f;
   line-height: 1.6;
 }
 .panel {
   padding: 26px;
-  border: 1px solid #dce2dc;
+  border: 1px solid #dbe3ee;
   background: #fff;
   border-radius: 16px;
   margin: 26px 0 24px;
@@ -41,22 +41,22 @@ input {
 }
 button {
   padding: 10px 14px;
-  border: 1px solid #c9d7ce;
-  color: #214c43;
+  border: 1px solid #c9d4e2;
+  color: #0e2a47;
   background: #fff;
   cursor: pointer;
   font-size: 14px;
 }
 button:hover:not(:disabled) {
-  background: #eef3ee;
+  background: #eef2f8;
 }
 button.primary {
-  background: #214c43;
+  background: #0e2a47;
   color: white;
-  border-color: #214c43;
+  border-color: #0e2a47;
 }
 button.primary:hover:not(:disabled) {
-  background: #163d34;
+  background: #0a1e33;
 }
 button:disabled {
   opacity: 0.5;
@@ -64,7 +64,7 @@ button:disabled {
 }
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid #aa7b2e;
+  outline: 3px solid #94610e;
   outline-offset: 3px;
 }
 fieldset {
@@ -90,10 +90,10 @@ label {
 }
 input {
   padding: 11px 12px;
-  border: 1px solid #b9c9bd;
+  border: 1px solid #c9d4e2;
   background: #fff;
   width: 100%;
-  color: #203a33;
+  color: #12263d;
 }
 [aria-invalid='true'] {
   border-color: #a03930;
@@ -107,7 +107,7 @@ input {
   padding: 14px 18px;
   border-radius: 10px;
   font-size: 14px;
-  background: #f6f8f4;
+  background: #f4f7fb;
 }
 .error {
   background: #fff0ec;
@@ -119,9 +119,9 @@ input {
   gap: 12px 28px;
   padding: 14px 18px;
   border-radius: 12px;
-  background: #f6f8f4;
+  background: #f4f7fb;
   font-size: 14px;
-  color: #365c4e;
+  color: #26456b;
 }
 .grid {
   display: grid;
@@ -137,7 +137,7 @@ input {
   gap: 4px;
   align-items: center;
   padding: 10px 6px;
-  border: 1px solid #cfe0d4;
+  border: 1px solid #d5e3f3;
   border-radius: 10px;
   background: #fff;
   font-size: 13px;
@@ -145,13 +145,13 @@ input {
 .cell strong {
   font-size: 14px;
   letter-spacing: 0.04em;
-  color: #214c43;
+  color: #0e2a47;
 }
 .cell .state {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #365c4e;
+  color: #26456b;
 }
 .cell.taken {
   border-color: #d8b3a6;
@@ -171,15 +171,15 @@ input {
 .tag {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #eef3ee;
-  color: #365c4e;
+  background: #eef2f8;
+  color: #26456b;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 .tag.inside {
-  background: #e3ece5;
-  color: #214c43;
+  background: #e3eaf4;
+  color: #0e2a47;
 }
 .tag.expired {
   background: #fbe6e2;

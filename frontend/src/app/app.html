@@ -1,47 +1,133 @@
-<div class="page-shell">
-  <header class="site-header">
-    <a class="brand" routerLink="/" aria-label="Parkeo, inicio">
-      <span class="brand-mark" aria-hidden="true">P</span><span>Autos Colombia</span>
-    </a>
-    <div class="session" aria-live="polite">
-      @if (usuario(); as activo) {
-        <span class="session-name">
-          <strong>{{ activo.nombre }}</strong>
-          <small>{{ activo.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Operador' }}</small>
-        </span>
-        <button type="button" (click)="cerrarSesion()">Cerrar sesión</button>
-      } @else {
-        <a routerLink="/login" routerLinkActive="active">Iniciar sesión</a>
-      }
-    </div>
-    <nav aria-label="Navegación principal">
-      <a
-        routerLink="/"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        ariaCurrentWhenActive="page"
-        >Inicio</a
-      >
-      <a routerLink="/tablero" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Tablero</a
-      >
-      <a routerLink="/control-acceso" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Registrar entrada</a
-      >
-      <a routerLink="/salida" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Registrar salida</a
-      >
-      <a routerLink="/cambiar-celda" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Cambiar celda</a
-      >
-      <a routerLink="/gestion/celdas" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Celdas</a
-      >
-      <a routerLink="/gestion/vehiculos" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Vehículos</a
-      >
-    </nav>
-  </header>
-  <main><router-outlet /></main>
-  <footer><span>Parkeo</span><span>Control vehicular con claridad.</span></footer>
+<div class="app-shell" [class.con-sesion]="usuario()">
+  @if (usuario(); as activo) {
+    <aside
+      id="menu-lateral"
+      class="sidebar"
+      [class.abierto]="menuAbierto()"
+      aria-label="Menú principal"
+    >
+      <div class="sidebar-head">
+        <a class="brand" routerLink="/" aria-label="Parkeo, inicio" (click)="cerrarMenu()">
+          <img class="brand-logo" src="/parkeo-logo.jpeg" alt="" width="36" height="36" />
+          <span class="brand-name">Parkeo</span>
+        </a>
+        <button type="button" class="sidebar-close" (click)="cerrarMenu()" aria-label="Cerrar menú">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+
+      <nav class="menu" aria-label="Secciones">
+        <p class="menu-group">Operación</p>
+        <a
+          routerLink="/"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          ariaCurrentWhenActive="page"
+          (click)="cerrarMenu()"
+          >Inicio</a
+        >
+        <a
+          routerLink="/tablero"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="cerrarMenu()"
+          >Tablero</a
+        >
+        <a
+          routerLink="/control-acceso"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="cerrarMenu()"
+          >Registrar entrada</a
+        >
+        <a
+          routerLink="/salida"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="cerrarMenu()"
+          >Registrar salida</a
+        >
+        <a
+          routerLink="/cambiar-celda"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="cerrarMenu()"
+          >Cambiar celda</a
+        >
+        <a
+          routerLink="/gestion/vehiculos"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="cerrarMenu()"
+          >Vehículos</a
+        >
+
+        @if (administrador()) {
+          <p class="menu-group">Administración</p>
+          <a
+            routerLink="/gestion/celdas"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            (click)="cerrarMenu()"
+            >Celdas</a
+          >
+        }
+      </nav>
+
+      <p class="sidebar-foot">
+        <span class="sidebar-user">{{ activo.nombre }}</span>
+        <span>{{ rol() }}</span>
+      </p>
+    </aside>
+
+    @if (menuAbierto()) {
+      <button
+        type="button"
+        class="backdrop"
+        (click)="cerrarMenu()"
+        aria-label="Cerrar menú"
+        tabindex="-1"
+      ></button>
+    }
+  }
+
+  <div class="app-body">
+    @if (usuario(); as activo) {
+      <header class="topbar">
+        <button
+          type="button"
+          class="menu-toggle"
+          (click)="alternarMenu()"
+          [attr.aria-expanded]="menuAbierto()"
+          aria-controls="menu-lateral"
+        >
+          <span aria-hidden="true">☰</span>
+          <span class="sr-only">Abrir menú</span>
+        </button>
+        <p class="breadcrumb">
+          <span class="breadcrumb-org">Autos Colombia</span>
+          <span aria-hidden="true">·</span>
+          <span>Sede principal</span>
+        </p>
+        <div class="session">
+          <span class="session-name">
+            <strong>{{ activo.nombre }}</strong>
+            <small>{{ rol() }}</small>
+          </span>
+          <button type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+        </div>
+      </header>
+    }
+
+    <main>
+      <router-outlet />
+    </main>
+
+    @if (usuario()) {
+      <footer class="app-footer">
+        <span>Parkeo</span>
+        <span>Control vehicular con claridad.</span>
+      </footer>
+    }
+  </div>
 </div>

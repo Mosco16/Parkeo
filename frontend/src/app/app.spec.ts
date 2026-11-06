@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { SesionUsuario } from './services/sesion-usuario.service';
 
@@ -15,7 +15,7 @@ const USUARIO = {
   direccion: null,
 };
 
-describe('Navegación', () => {
+describe('Shell de la aplicación', () => {
   beforeEach(async () => {
     sessionStorage.clear();
     await TestBed.configureTestingModule({
@@ -31,25 +31,79 @@ describe('Navegación', () => {
     return fixture;
   }
 
-  it('ofrece iniciar sesión cuando no hay usuario', () => {
-    const fixture = crear();
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('a[href="/login"]')?.textContent,
-    ).toBe('Iniciar sesión');
-  });
-
-  it('muestra al usuario de la sesión y permite cerrarla', () => {
+  function iniciar(rol: 'ADMINISTRADOR' | 'OPERADOR') {
     TestBed.inject(SesionUsuario).iniciar({
       access_token: 'token',
       token_type: 'bearer',
-      usuario: USUARIO,
+      usuario: { ...USUARIO, rol },
     });
-    const fixture = crear();
-    const elemento = fixture.nativeElement as HTMLElement;
+  }
 
-    expect(elemento.textContent).toContain('Ana Gómez');
-    expect(elemento.textContent).toContain('Administrador');
-    expect(elemento.querySelector('a[href="/login"]')).toBeNull();
+  it('oculta el menú y la barra superior sin sesión', () => {
+    const elemento = crear().nativeElement as HTMLElement;
+
+    expect(elemento.querySelector('aside')).toBeNull();
+    expect(elemento.querySelector('.topbar')).toBeNull();
+    expect(elemento.querySelector('main')).not.toBeNull();
+  });
+
+  it('muestra el menú, el breadcrumb y el rol del usuario', () => {
+    iniciar('ADMINISTRADOR');
+    const elemento = crear().nativeElement as HTMLElement;
+
+    expect(elemento.querySelector('.brand-name')?.textContent).toBe('Parkeo');
+    expect(elemento.textContent).toContain('Autos Colombia');
+    expect(elemento.textContent).toContain('Sede principal');
+    expect(elemento.querySelector('.session-name strong')?.textContent).toBe('Ana Gómez');
+    expect(elemento.querySelector('.session-name small')?.textContent).toBe('Administrador');
+  });
+
+  it('reserva la administración de celdas para el administrador', () => {
+    iniciar('OPERADOR');
+    const elemento = crear().nativeElement as HTMLElement;
+
+    expect(elemento.querySelector('a[href="/gestion/celdas"]')).toBeNull();
     expect(elemento.querySelector('a[href="/gestion/vehiculos"]')?.textContent).toBe('Vehículos');
+  });
+
+  it('muestra celdas al administrador', () => {
+    iniciar('ADMINISTRADOR');
+    const elemento = crear().nativeElement as HTMLElement;
+
+    expect(elemento.querySelector('a[href="/gestion/celdas"]')?.textContent).toBe('Celdas');
+  });
+
+  it('abre y cierra el menú lateral', () => {
+    iniciar('OPERADOR');
+    const fixture = crear();
+    const componente = fixture.componentInstance as unknown as {
+      menuAbierto: () => boolean;
+      alternarMenu: () => void;
+    };
+    const elemento = fixture.nativeElement as HTMLElement;
+    const boton = elemento.querySelector('.menu-toggle') as HTMLButtonElement;
+
+    boton.click();
+    fixture.detectChanges();
+    expect(componente.menuAbierto()).toBe(true);
+    expect(elemento.querySelector('aside')?.classList).toContain('abierto');
+
+    (elemento.querySelector('.backdrop') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(componente.menuAbierto()).toBe(false);
+  });
+
+  it('cierra la sesión y vuelve al login', () => {
+    iniciar('OPERADOR');
+    const fixture = crear();
+    const router = TestBed.inject(Router);
+    const navegar = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.session button')!.click();
+    fixture.detectChanges();
+
+    expect(TestBed.inject(SesionUsuario).autenticado()).toBe(false);
+    expect(sessionStorage.getItem('parkeo.sesion')).toBeNull();
+    expect(navegar).toHaveBeenCalledWith(['/login']);
   });
 });

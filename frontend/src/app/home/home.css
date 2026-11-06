@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  border-bottom: 1px solid #dce2dc;
+  border-bottom: 1px solid #dbe3ee;
 }
 .brand {
   display: inline-flex;
@@ -29,13 +29,13 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: #214c43;
+  background: #0e2a47;
   color: #fff;
   font-size: 14px;
   letter-spacing: -1px;
 }
 .header-label {
-  color: #5d6e65;
+  color: #64748b;
   font-size: 13px;
 }
 .welcome {
@@ -46,7 +46,7 @@
   padding: 84px 0 76px;
 }
 .eyebrow {
-  color: #526c60;
+  color: #5b6b7f;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 2px;
@@ -61,14 +61,14 @@ h1 {
 .description {
   max-width: 430px;
   margin: 0;
-  color: #365c4e;
+  color: #26456b;
   font-size: 25px;
   line-height: 1.4;
 }
 .supporting-copy {
   max-width: 405px;
   margin: 22px 0 0;
-  color: #627168;
+  color: #64748b;
   font-size: 15px;
   line-height: 1.8;
 }
@@ -78,7 +78,7 @@ h1 {
   gap: 10px;
   margin-top: 32px;
   font-size: 13px;
-  color: #53685c;
+  color: #64748b;
 }
 .note-line {
   width: 24px;
@@ -90,12 +90,12 @@ h1 {
   align-items: center;
   gap: 9px;
   margin: 18px 0 0;
-  color: #627168;
+  color: #64748b;
   font-size: 13px;
   line-height: 1.5;
 }
 .connection-status.available {
-  color: #246044;
+  color: #163c63;
 }
 .connection-status.unavailable {
   color: #a23b30;
@@ -115,16 +115,16 @@ h1 {
   align-items: center;
   justify-content: center;
   min-height: 320px;
-  border: 1px solid #dce5dc;
+  border: 1px solid #dbe3ee;
   border-radius: 24px;
-  background: #eaf0e7;
+  background: #e9eef6;
 }
 .illustration-grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(#214c4308 1px, transparent 1px),
-    linear-gradient(90deg, #214c4308 1px, transparent 1px);
+    linear-gradient(#0e2a4710 1px, transparent 1px),
+    linear-gradient(90deg, #0e2a4710 1px, transparent 1px);
   background-size: 32px 32px;
 }
 .parking-label,
@@ -135,7 +135,7 @@ svg {
 .parking-label {
   font-size: 10px;
   letter-spacing: 3px;
-  color: #5d7569;
+  color: #64748b;
   margin-top: 28px;
 }
 svg {
@@ -145,7 +145,7 @@ svg {
 .illustration-caption {
   margin-bottom: 28px;
   font-size: 12px;
-  color: #526c60;
+  color: #5b6b7f;
 }
 .overview {
   padding-bottom: 68px;
@@ -162,7 +162,7 @@ h2 {
 .section-heading p {
   margin: 8px 0 0;
   font-size: 14px;
-  color: #627168;
+  color: #64748b;
 }
 .feature-grid {
   display: grid;
@@ -172,11 +172,11 @@ h2 {
 .feature {
   padding: 25px;
   background: #fff;
-  border: 1px solid #e0e5de;
+  border: 1px solid #e1e7f0;
   border-radius: 14px;
 }
 .feature-number {
-  color: #697b6e;
+  color: #6b7a8c;
   font-size: 12px;
   font-weight: 600;
 }
@@ -187,7 +187,7 @@ h3 {
 }
 .feature p {
   margin: 0;
-  color: #627168;
+  color: #64748b;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -196,9 +196,9 @@ h3 {
   justify-content: space-between;
   gap: 16px;
   padding: 24px 0;
-  border-top: 1px solid #dce2dc;
+  border-top: 1px solid #dbe3ee;
   font-size: 12px;
-  color: #627168;
+  color: #64748b;
 }
 @media (max-width: 760px) {
   .page-shell {
