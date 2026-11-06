@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { timeout } from 'rxjs';
-import { Celda, CeldaActualizar, CeldaCrear, CeldasPagina, Disponibilidad } from '../models/celda';
+import { Celda, CeldasPagina, Disponibilidad } from '../models/celda';
 
 import { API_BASE_URL } from './api.service';
 
@@ -24,14 +24,10 @@ export class CeldasService {
       .get<Disponibilidad>(`${this.cells}/disponibilidad`)
       .pipe(timeout(15000));
   }
-  create(data: CeldaCrear) {
-    return this.http.post<Celda>(this.cells, data).pipe(timeout(15000));
-  }
-  update(id: number, data: CeldaActualizar) {
-    return this.http.patch<Celda>(`${this.cells}/${id}`, data).pipe(timeout(15000));
-  }
-  delete(id: number) {
-    return this.http.delete<void>(`${this.cells}/${id}`).pipe(timeout(15000));
+  /** S5: solo el administrador enciende o apaga; no se edita código ni tipo. */
+  cambiarEstado(id: number, activa: boolean) {
+    return this.http
+      .patch<Celda>(`${this.cells}/${id}/estado`, { activa })
+      .pipe(timeout(15000));
   }
 }
-

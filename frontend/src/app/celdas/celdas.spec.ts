@@ -6,7 +6,18 @@ import { Celdas } from './celdas';
 describe('Gestión de celdas', () => {
   let fixture: ComponentFixture<Celdas>;
   let http: HttpTestingController;
-  const cell = { id: 1, codigo: 'A-01', tipo: 'AUTO' as const, activa: true };
+
+  const celdas = [
+    { id: 1, codigo: 'A1', tipo: 'AUTO', activa: true, estado: 'DISPONIBLE', placa: null },
+    { id: 2, codigo: 'A2', tipo: 'AUTO', activa: true, estado: 'OCUPADA', placa: 'ABC123' },
+    { id: 3, codigo: 'A3', tipo: 'AUTO', activa: false, estado: 'MANTENIMIENTO', placa: null },
+    { id: 4, codigo: 'M1', tipo: 'MOTO', activa: true, estado: 'DISPONIBLE', placa: null },
+  ] as const;
+  const disponibilidad = {
+    celdas,
+    cupo: { AUTO: { total: 3, libres: 1 }, MOTO: { total: 1, libres: 1 } },
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Celdas],
@@ -15,79 +26,76 @@ describe('Gestión de celdas', () => {
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(Celdas);
     fixture.detectChanges();
-    http
-      .expectOne('/celdas?offset=0&limit=10')
-      .flush({ items: [cell], total: 1, offset: 0, limit: 10 });
+    expect(fixture.nativeElement.textContent).toContain('Cargando celdas');
+    http.expectOne('/celdas/disponibilidad').flush(disponibilidad);
+    fixture.detectChanges();
   });
   afterEach(() => http.verify());
 
-  it('crea desde el formulario HTML con código normalizado y tipo del catálogo', () => {
-    fixture.componentInstance.newCell();
-    fixture.detectChanges();
+  it('muestra el resumen y agrupa las celdas por tipo con su estado', () => {
     const root = fixture.nativeElement as HTMLElement;
-    const codigo = root.querySelector<HTMLInputElement>('#codigo')!;
-    codigo.value = ' a-02 ';
-    codigo.dispatchEvent(new Event('input', { bubbles: true }));
-    const tipo = root.querySelector<HTMLSelectElement>('#tipo')!;
-    expect(Array.from(tipo.options).map((o) => o.value)).toEqual(['', 'AUTO', 'MOTO']);
-    tipo.value = 'MOTO';
-    tipo.dispatchEvent(new Event('change', { bubbles: true }));
-    root
-      .querySelector('form')!
-      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    fixture.componentInstance.save();
-    const request = http.expectOne({ method: 'POST', url: '/celdas' });
-    expect(request.request.body).toEqual({ codigo: 'A-02', tipo: 'MOTO' });
-    request.flush({ ...cell, codigo: 'A-02' });
-    http
-      .expectOne('/celdas?offset=0&limit=10')
-      .flush({ items: [cell], total: 1, offset: 0, limit: 10 });
-    expect(fixture.componentInstance.success()).toContain('registrada');
+
+    expect(root.textContent).toContain('4 total');
+    expect(root.textContent).toContain('2 disponibles');
+    expect(root.textContent).toContain('1 ocupadas');
+    expect(root.textContent).toContain('1 en mantenimiento');
+    expect(root.querySelectorAll('.panel').length).toBe(2);
+    expect(root.querySelectorAll('.cell').length).toBe(4);
+    expect(root.querySelector('.cell.ocupada')?.textContent).toContain('ABC123');
+    expect(root.querySelector('.cell.mantenimiento')?.textContent).toContain('Mantenimiento');
   });
 
-  it('rechaza blancos y muestra duplicados junto al código', () => {
+  it('pone una celda disponible en mantenimiento y recarga el mapa', () => {
     const c = fixture.componentInstance;
-    c.newCell();
-    c.form.setValue({ codigo: ' ', tipo: '' });
-    c.save();
-    expect(c.form.invalid).toBe(true);
-    c.form.setValue({ codigo: 'A-01', tipo: 'AUTO' });
-    c.save();
-    http.expectOne('/celdas').flush({}, { status: 409, statusText: 'Conflict' });
-    expect(c.fieldError('codigo')).toContain('Ya existe');
+    c.alternar(celdas[0]);
+    const request = http.expectOne({ method: 'PATCH', url: '/celdas/1/estado' });
+    expect(request.request.body).toEqual({ activa: false });
+    request.flush({ ...celdas[0], activa: false });
+    http.expectOne('/celdas/disponibilidad').flush(disponibilidad);
+    expect(c.success()).toContain('en mantenimiento');
   });
 
-  it('edita mediante PATCH y recarga la lista', () => {
+  it('habilita una celda en mantenimiento', () => {
     const c = fixture.componentInstance;
-    c.edit(cell);
-    http.expectOne('/celdas/1').flush(cell);
-    c.form.controls.tipo.setValue('MOTO');
-    c.save();
-    const request = http.expectOne({ method: 'PATCH', url: '/celdas/1' });
-    expect(request.request.body.id).toBeUndefined();
-    request.flush({ ...cell, tipo: 'MOTO' });
-    http
-      .expectOne('/celdas?offset=0&limit=10')
-      .flush({ items: [cell], total: 1, offset: 0, limit: 10 });
+    c.alternar(celdas[2]);
+    const request = http.expectOne({ method: 'PATCH', url: '/celdas/3/estado' });
+    expect(request.request.body).toEqual({ activa: true });
+    request.flush({ ...celdas[2], activa: true });
+    http.expectOne('/celdas/disponibilidad').flush(disponibilidad);
+    expect(c.success()).toContain('habilitada');
   });
 
-  it('requiere confirmación y permite cancelar antes de eliminar', () => {
+  it('no permite apagar una celda ocupada', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const botones = root.querySelectorAll<HTMLButtonElement>('.cell button');
+
+    expect(botones[1].disabled).toBe(true);
+    expect(botones[1].textContent).toContain('Mantenimiento');
+    expect(fixture.componentInstance.puedeAlternar(celdas[1])).toBe(false);
+    http.expectNone({ method: 'PATCH', url: '/celdas/2/estado' });
+  });
+
+  it('informa el conflicto del servicio al apagar una celda con estancia', () => {
     const c = fixture.componentInstance;
-    c.confirmDelete(cell);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[role="alertdialog"]').textContent).toContain(
-      'A-01',
-    );
-    c.cancel();
-    http.expectNone((request) => request.method === 'DELETE');
-    c.confirmDelete(cell);
-    c.remove();
+    c.alternar(celdas[0]);
     http
-      .expectOne({ method: 'DELETE', url: '/celdas/1' })
-      .flush(null, { status: 204, statusText: 'No Content' });
-    http
-      .expectOne('/celdas?offset=0&limit=10')
-      .flush({ items: [], total: 0, offset: 0, limit: 10 });
-    expect(c.success()).toContain('eliminada');
+      .expectOne({ method: 'PATCH', url: '/celdas/1/estado' })
+      .flush({ detail: 'ocupada' }, { status: 409, statusText: 'Conflict' });
+
+    expect(c.actionError()).toContain('estancia abierta');
+    expect(c.busy()).toBe(false);
+  });
+
+  it('muestra el fallo de conexión y permite reintentar', () => {
+    const c = fixture.componentInstance;
+    c.load();
+    http.expectOne('/celdas/disponibilidad').error(new ProgressEvent('error'));
+
+    expect(c.listError()).toContain('No se pudo conectar');
+    expect(c.celdas().length).toBe(0);
+
+    c.load();
+    http.expectOne('/celdas/disponibilidad').flush(disponibilidad);
+    expect(c.celdas().length).toBe(4);
   });
 });
