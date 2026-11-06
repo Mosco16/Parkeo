@@ -33,6 +33,12 @@ export const routes: Routes = [
     loadComponent: () => import('./cambiar-celda/cambiar-celda').then((m) => m.CambiarCelda),
   },
   {
+    path: 'historial',
+    title: 'Historial | Parkeo',
+    canActivate: [sesionActiva],
+    loadComponent: () => import('./historial/historial').then((m) => m.Historial),
+  },
+  {
     path: 'gestion/celdas',
     title: 'Celdas | Parkeo',
     canActivate: [sesionActiva, soloAdministrador],

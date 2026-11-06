@@ -32,3 +32,20 @@ export interface EstadoVehiculo {
   mensualidad: 'VIGENTE' | 'VENCIDA';
   celda_sugerida: Celda | null;
 }
+
+/** S6: fila de solo lectura del historial de cambios de celda. */
+export interface CambioCeldaHistorial {
+  id: number;
+  fecha_hora: string;
+  placa: string;
+  celda_anterior: string;
+  celda_nueva: string;
+  usuario: string;
+}
+
+export interface HistorialCambiosPagina {
+  items: CambioCeldaHistorial[];
+  total: number;
+  offset: number;
+  limit: number;
+}

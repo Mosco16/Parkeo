@@ -64,6 +64,7 @@ describe('Shell de la aplicación', () => {
 
     expect(elemento.querySelector('a[href="/gestion/celdas"]')).toBeNull();
     expect(elemento.querySelector('a[href="/gestion/usuarios"]')).toBeNull();
+    expect(elemento.querySelector('a[href="/historial"]')?.textContent).toBe('Historial');
     expect(elemento.querySelector('a[href="/gestion/vehiculos"]')?.textContent).toBe('Vehículos');
   });
 

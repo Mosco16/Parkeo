@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { EMPTY, Observable, expand, reduce, throwError, timeout } from 'rxjs';
 import { Celda } from '../models/celda';
 import { Operador } from '../models/operador';
-import { CambioCeldaCrear, EntradaCrear, SalidaCrear, Estancia, EstanciaAbierta, EstadoVehiculo } from '../models/estancia';
+import { CambioCeldaCrear, EntradaCrear, SalidaCrear, Estancia, EstanciaAbierta, EstadoVehiculo, HistorialCambiosPagina } from '../models/estancia';
 import { API_BASE_URL } from './api.service';
 import { CeldasService } from './celdas.service';
 import { OperadoresService } from './operadores.service';
@@ -36,6 +36,14 @@ export class EstanciasService {
   consultar(placa: string) {
     return this.http
       .get<EstadoVehiculo>(`${this.base}/vehiculo/${encodeURIComponent(placa)}`)
+      .pipe(timeout(15000));
+  }
+  /** S6: historial paginado, de más reciente a más antiguo. */
+  historialCambios(offset: number, limit: number) {
+    return this.http
+      .get<HistorialCambiosPagina>(`${this.base}/historial-cambios`, {
+        params: { offset, limit },
+      })
       .pipe(timeout(15000));
   }
   celdas(): Observable<Celda[]> {

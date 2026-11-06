@@ -1,0 +1,71 @@
+<section class="history" aria-labelledby="history-title">
+  <header class="heading">
+    <div>
+      <span class="eyebrow">HISTORIAL DE CELDAS</span>
+      <h1 id="history-title">Cambios de celda</h1>
+      <p>Consulta los movimientos registrados, del más reciente al más antiguo.</p>
+    </div>
+    <button type="button" (click)="load()" [disabled]="loading()">Actualizar</button>
+  </header>
+
+  <section class="panel" aria-label="Historial de cambios de celda" [attr.aria-busy]="loading()">
+    @if (loading() && !items().length) {
+      <p class="empty" role="status">Cargando historial…</p>
+    } @else if (listError()) {
+      <div class="empty">
+        <p class="notice error" role="alert">{{ listError() }}</p>
+        <button type="button" (click)="load()" [disabled]="loading()">Reintentar</button>
+      </div>
+    } @else if (!items().length) {
+      <div class="empty">
+        <h2>Aún no hay cambios registrados</h2>
+        <p>Los movimientos aparecerán aquí cuando se cambie un vehículo de celda.</p>
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table>
+          <caption class="sr-only">Cambios de celda registrados</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha y hora</th>
+              <th scope="col">Placa</th>
+              <th scope="col">Celda anterior</th>
+              <th scope="col">Celda nueva</th>
+              <th scope="col">Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cambio of items(); track cambio.id) {
+              <tr>
+                <td>{{ fecha(cambio.fecha_hora) }}</td>
+                <th scope="row">{{ cambio.placa }}</th>
+                <td>{{ cambio.celda_anterior }}</td>
+                <td>{{ cambio.celda_nueva }}</td>
+                <td>{{ cambio.usuario }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <nav class="pagination" aria-label="Paginación del historial">
+      <span>Página {{ page() }} de {{ pages() }} · {{ total() }} cambios</span>
+      <div class="actions">
+        <button
+          type="button"
+          (click)="load(offset() - limit)"
+          [disabled]="loading() || offset() === 0"
+        >
+          Anterior</button
+        ><button
+          type="button"
+          (click)="load(offset() + limit)"
+          [disabled]="loading() || offset() + limit >= total()"
+        >
+          Siguiente
+        </button>
+      </div>
+    </nav>
+  </section>
+</section>
