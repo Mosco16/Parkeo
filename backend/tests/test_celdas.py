@@ -26,6 +26,7 @@ def test_disponibilidad_distingue_los_tres_estados():
         ],
         [2],
     ]
+    session.execute.return_value = [(2, "ABC123")]
 
     resultado = disponibilidad(session)
 
@@ -41,14 +42,27 @@ def test_disponibilidad_distingue_los_tres_estados():
     assert {c["id"]: c["activa"] for c in resultado["celdas"]}[3] is False
 
 
+def test_disponibilidad_incluye_la_placa_solo_en_las_ocupadas():
+    session = MagicMock()
+    session.scalars.side_effect = [[celda(1, "A1"), celda(2, "A2")], [2]]
+    session.execute.return_value = [(2, "ABC123")]
+
+    resultado = disponibilidad(session)
+
+    placas = {c["id"]: c["placa"] for c in resultado["celdas"]}
+    assert placas == {1: None, 2: "ABC123"}
+
+
 def test_mantenimiento_tiene_prioridad_sobre_ocupada():
     session = MagicMock()
     # Una celda apagada nunca se ofrece, aunque tuviera una estancia abierta.
     session.scalars.side_effect = [[celda(1, "A1", activa=False)], [1]]
+    session.execute.return_value = [(1, "XYZ987")]
 
     resultado = disponibilidad(session)
 
     assert resultado["celdas"][0]["estado"] == "MANTENIMIENTO"
+    assert resultado["celdas"][0]["placa"] is None
     assert resultado["cupo"]["AUTO"] == {"total": 1, "libres": 0}
 
 

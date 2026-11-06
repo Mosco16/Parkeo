@@ -60,6 +60,7 @@ class CeldaDisponible(BaseModel):
     tipo: TipoCelda
     activa: bool
     estado: EstadoCelda
+    placa: str | None = None
 
 
 class CupoTipo(BaseModel):

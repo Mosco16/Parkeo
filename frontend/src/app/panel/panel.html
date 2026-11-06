@@ -1,0 +1,143 @@
+<section class="panel-page" aria-labelledby="panel-title">
+  <header class="heading">
+    <div>
+      <span class="eyebrow">PANEL DE CONTROL</span>
+      <h1 id="panel-title">Hola, {{ usuario()?.nombre ?? 'bienvenido' }}</h1>
+      <p>Resumen del parqueadero y accesos directos a la operación.</p>
+    </div>
+    <div class="heading-actions">
+      <p
+        class="service"
+        [class.ok]="servicio() === 'disponible'"
+        [class.bad]="servicio() === 'sin-conexion'"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="dot" aria-hidden="true"></span>{{ servicioTexto() }}
+      </p>
+      <button type="button" (click)="cargar()" [disabled]="cargando()">Actualizar</button>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p role="alert" class="notice error">{{ error() }}</p>
+  }
+
+  <div class="kpis" aria-label="Indicadores del parqueadero">
+    <article class="kpi ocupadas">
+      <span class="kpi-label">Ocupadas</span>
+      <strong>{{ kpis().ocupadas }}</strong>
+      <span class="kpi-note">{{ kpis().ocupacion }}% de ocupación</span>
+    </article>
+    <article class="kpi disponibles">
+      <span class="kpi-label">Disponibles</span>
+      <strong>{{ kpis().disponibles }}</strong>
+      <span class="kpi-note">Listas para asignar</span>
+    </article>
+    <article class="kpi mantenimiento">
+      <span class="kpi-label">Mantenimiento</span>
+      <strong>{{ kpis().mantenimiento }}</strong>
+      <span class="kpi-note">Fuera de servicio</span>
+    </article>
+    <article class="kpi total">
+      <span class="kpi-label">Total</span>
+      <strong>{{ kpis().total }}</strong>
+      <span class="kpi-note">Celdas registradas</span>
+    </article>
+  </div>
+
+  <section class="accesos" aria-labelledby="accesos-title">
+    <h2 id="accesos-title">Accesos rápidos</h2>
+    <div class="accesos-grid">
+      <a class="acceso" routerLink="/control-acceso">
+        <strong>Registrar ingreso</strong>
+        <span>Da entrada a un vehículo y asigna celda.</span>
+      </a>
+      <a class="acceso" routerLink="/salida">
+        <strong>Registrar salida</strong>
+        <span>Cierra la estancia y libera la celda.</span>
+      </a>
+      <a class="acceso" routerLink="/cambiar-celda">
+        <strong>Cambiar celda</strong>
+        <span>Mueve un vehículo dentro del parqueadero.</span>
+      </a>
+      @if (administrador()) {
+        <a class="acceso" routerLink="/gestion/celdas">
+          <strong>Gestionar celdas</strong>
+          <span>Habilita o pone celdas en mantenimiento.</span>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="mapa" aria-labelledby="mapa-title">
+    <div class="section-heading">
+      <h2 id="mapa-title">Mapa de celdas</h2>
+      <p class="leyenda">
+        Blanco: disponible · Rojo: ocupada · Gris punteado: mantenimiento
+      </p>
+    </div>
+
+    @if (cargando() && !celdas().length) {
+      <p role="status" class="notice">Cargando celdas…</p>
+    } @else if (!celdas().length && !error()) {
+      <p class="notice">Todavía no hay celdas registradas.</p>
+    } @else {
+      @for (grupo of grupos(); track grupo.tipo) {
+        <div class="grupo">
+          <h3>
+            {{ grupo.titulo }} <small>{{ grupo.celdas.length }} celdas</small>
+          </h3>
+          <ul class="grid" [attr.aria-label]="'Celdas de ' + grupo.titulo">
+            @for (celda of grupo.celdas; track celda.id) {
+              <li
+                class="cell"
+                [class.ocupada]="celda.estado === 'OCUPADA'"
+                [class.mantenimiento]="celda.estado === 'MANTENIMIENTO'"
+                [attr.title]="estadoCelda(celda)"
+                [attr.aria-label]="celda.codigo + ': ' + estadoCelda(celda)"
+              >
+                <strong>{{ celda.codigo }}</strong>
+                @if (celda.placa) {
+                  <span class="plate">{{ celda.placa }}</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    }
+  </section>
+
+  <section class="perfiles" aria-labelledby="perfiles-title">
+    <h2 id="perfiles-title">Perfiles del sistema</h2>
+    <div class="perfil-grid">
+      <article class="perfil" [class.actual]="administrador()">
+        <header>
+          <h3>Administrador</h3>
+          @if (administrador()) {
+            <span class="badge">Tu perfil</span>
+          }
+        </header>
+        <ul>
+          <li>Operación completa del parqueadero.</li>
+          <li>Gestión de cuentas de operador.</li>
+          <li>Mantenimiento de celdas.</li>
+        </ul>
+      </article>
+      <article class="perfil" [class.actual]="!administrador()">
+        <header>
+          <h3>Operador</h3>
+          @if (!administrador()) {
+            <span class="badge">Tu perfil</span>
+          }
+        </header>
+        <ul>
+          <li>Entradas, salidas y cambios de celda.</li>
+          <li>Consulta del tablero y del historial.</li>
+          <li>Registro y consulta de vehículos.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+</section>

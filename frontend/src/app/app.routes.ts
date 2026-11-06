@@ -38,7 +38,13 @@ export const routes: Routes = [
     canActivate: [sesionActiva, soloAdministrador],
     loadComponent: () => import('./celdas/celdas').then((m) => m.Celdas),
   },
-  { path: '', pathMatch: 'full', loadComponent: () => import('./home/home').then((m) => m.Home) },
+  {
+    path: '',
+    pathMatch: 'full',
+    title: 'Inicio | Parkeo',
+    canActivate: [sesionActiva],
+    loadComponent: () => import('./panel/panel').then((m) => m.Panel),
+  },
   {
     path: 'gestion/vehiculos',
     title: 'Vehículos | Parkeo',

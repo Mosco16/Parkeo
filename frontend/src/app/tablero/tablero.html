@@ -27,10 +27,14 @@
         <li
           class="cell"
           [class.taken]="celda.estado === 'OCUPADA'"
-          [attr.aria-label]="celda.codigo + ': ' + (celda.estado === 'LIBRE' ? 'libre' : 'ocupada')"
+          [class.maintenance]="celda.estado === 'MANTENIMIENTO'"
+          [attr.aria-label]="etiqueta(celda)"
         >
           <strong>{{ celda.codigo }}</strong>
-          <span class="state">{{ celda.estado === 'LIBRE' ? 'Libre' : 'Ocupada' }}</span>
+          <span class="state">{{ textoEstado(celda) }}</span>
+          @if (celda.placa) {
+            <span class="plate">{{ celda.placa }}</span>
+          }
         </li>
       }
     </ul>

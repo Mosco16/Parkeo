@@ -210,3 +210,19 @@ input {
     padding-top: 28px;
   }
 }
+
+.cell .plate {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #923b2e;
+}
+.cell.maintenance {
+  border-style: dashed;
+  border-color: #c9d4e2;
+  background: #eef2f8;
+}
+.cell.maintenance strong,
+.cell.maintenance .state {
+  color: #5b6b7f;
+}

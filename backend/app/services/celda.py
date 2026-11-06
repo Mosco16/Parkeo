@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.models import Celda, Estancia
+from app.models import Celda, Estancia, Vehiculo
 from app.schemas.celda import CeldaActualizar, CeldaCrear
 
 
@@ -106,6 +106,15 @@ def disponibilidad(session: Session) -> dict:
     subq_abierta = select(Estancia.celda_id).where(Estancia.salida.is_(None)).distinct().subquery()
     celdas = list(session.scalars(select(Celda).order_by(func.length(Celda.codigo), Celda.codigo)))
     ocupadas = set(session.scalars(select(subq_abierta.c.celda_id)))
+    # S8: la placa acompaña a la celda ocupada para el mapa del panel.
+    placas = {
+        celda_id: placa
+        for celda_id, placa in session.execute(
+            select(Estancia.celda_id, Vehiculo.placa)
+            .join(Vehiculo, Vehiculo.id == Estancia.vehiculo_id)
+            .where(Estancia.salida.is_(None))
+        )
+    }
     items = []
     cupo = {"AUTO": {"total": 0, "libres": 0}, "MOTO": {"total": 0, "libres": 0}}
     for celda in celdas:
@@ -123,6 +132,7 @@ def disponibilidad(session: Session) -> dict:
                 "tipo": celda.tipo,
                 "activa": celda.activa,
                 "estado": estado,
+                "placa": placas.get(celda.id) if estado == "OCUPADA" else None,
             }
         )
         if celda.tipo in cupo:
