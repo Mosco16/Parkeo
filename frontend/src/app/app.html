@@ -1,14 +1,17 @@
 <div class="page-shell">
   <header class="site-header">
-    <a class="brand" routerLink="/" aria-label="Autos Colombia, inicio">
-      <span class="brand-mark" aria-hidden="true">AC</span><span>Autos Colombia</span>
+    <a class="brand" routerLink="/" aria-label="Parkeo, inicio">
+      <span class="brand-mark" aria-hidden="true">P</span><span>Autos Colombia</span>
     </a>
     <div class="session" aria-live="polite">
-      @if (operador(); as activo) {
-        <span class="session-name">Turno: <strong>{{ activo.nombre }}</strong></span>
-        <button type="button" (click)="cambiarOperador()">Cambiar operador</button>
+      @if (usuario(); as activo) {
+        <span class="session-name">
+          <strong>{{ activo.nombre }}</strong>
+          <small>{{ activo.rol === 'ADMINISTRADOR' ? 'Administrador' : 'Operador' }}</small>
+        </span>
+        <button type="button" (click)="cerrarSesion()">Cerrar sesión</button>
       } @else {
-        <a routerLink="/operador" routerLinkActive="active">Iniciar turno</a>
+        <a routerLink="/login" routerLinkActive="active">Iniciar sesión</a>
       }
     </div>
     <nav aria-label="Navegación principal">
@@ -31,9 +34,6 @@
       <a routerLink="/cambiar-celda" routerLinkActive="active" ariaCurrentWhenActive="page"
         >Cambiar celda</a
       >
-      <a routerLink="/gestion/operadores" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Operadores</a
-      >
       <a routerLink="/gestion/celdas" routerLinkActive="active" ariaCurrentWhenActive="page"
         >Celdas</a
       >
@@ -43,5 +43,5 @@
     </nav>
   </header>
   <main><router-outlet /></main>
-  <footer><span>Autos Colombia</span><span>Control vehicular con claridad.</span></footer>
+  <footer><span>Parkeo</span><span>Control vehicular con claridad.</span></footer>
 </div>

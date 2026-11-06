@@ -52,6 +52,17 @@ nav a.active {
   font-size: 13px;
   color: #526c60;
 }
+.session-name {
+  display: grid;
+  line-height: 1.25;
+  text-align: right;
+}
+.session-name small {
+  color: #6c7d72;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 .session button {
   padding: 6px 10px;
   border: 1px solid #dce2dc;

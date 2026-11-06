@@ -1,52 +1,48 @@
 import { Routes } from '@angular/router';
-import { operadorActivo } from './guards/operador.guard';
+import { sesionActiva, soloAdministrador } from './guards/sesion.guard';
 
 export const routes: Routes = [
   {
-    path: 'operador',
-    title: 'Iniciar turno | Autos Colombia',
-    loadComponent: () =>
-      import('./seleccion-operador/seleccion-operador').then((m) => m.SeleccionOperador),
+    path: 'login',
+    title: 'Iniciar sesión | Parkeo',
+    loadComponent: () => import('./login/login').then((m) => m.Login),
   },
   {
     path: 'tablero',
     title: 'Tablero | Autos Colombia',
-    canActivate: [operadorActivo],
+    canActivate: [sesionActiva],
     loadComponent: () => import('./tablero/tablero').then((m) => m.Tablero),
   },
   {
     path: 'control-acceso',
     title: 'Registrar entrada | Autos Colombia',
-    canActivate: [operadorActivo],
+    canActivate: [sesionActiva],
     loadComponent: () => import('./control-acceso/control-acceso').then((m) => m.ControlAcceso),
   },
   {
     path: 'salida',
     title: 'Registrar salida | Autos Colombia',
-    canActivate: [operadorActivo],
+    canActivate: [sesionActiva],
     loadComponent: () =>
       import('./registrar-salida/registrar-salida').then((m) => m.RegistrarSalida),
   },
   {
     path: 'cambiar-celda',
     title: 'Cambiar celda | Autos Colombia',
-    canActivate: [operadorActivo],
+    canActivate: [sesionActiva],
     loadComponent: () => import('./cambiar-celda/cambiar-celda').then((m) => m.CambiarCelda),
-  },
-  {
-    path: 'gestion/operadores',
-    title: 'Operadores | Autos Colombia',
-    loadComponent: () => import('./operadores/operadores').then((m) => m.Operadores),
   },
   {
     path: 'gestion/celdas',
     title: 'Celdas | Autos Colombia',
+    canActivate: [sesionActiva, soloAdministrador],
     loadComponent: () => import('./celdas/celdas').then((m) => m.Celdas),
   },
   { path: '', pathMatch: 'full', loadComponent: () => import('./home/home').then((m) => m.Home) },
   {
     path: 'gestion/vehiculos',
     title: 'Vehículos | Autos Colombia',
+    canActivate: [sesionActiva],
     loadComponent: () => import('./vehiculos/vehiculos').then((m) => m.Vehiculos),
   },
   { path: '**', redirectTo: '' },
