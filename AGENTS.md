@@ -1,65 +1,76 @@
-# Guía de trabajo de Autos Colombia
+# Guía de trabajo de Parkeo
 
 Estas instrucciones se aplican a todo el repositorio. La documentación para
 instalar y ejecutar los proyectos en Windows está en `README.md`.
 
 ## Estructura
 
-- `backend/app/main.py`: aplicación FastAPI; `GET /health` devuelve HTTP 200 y
-  `{"status": "ok"}`.
+- `backend/app/main.py`: aplicación FastAPI (`Parkeo API`); `GET /health` devuelve
+  HTTP 200 y `{"status": "ok"}`.
 - `backend/tests/`: pruebas con pytest y `TestClient`.
-- `backend/app/config.py`: carga `backend/.env` por ruta absoluta; el entorno tiene prioridad.
+- `backend/app/config.py`: carga `backend/.env` por ruta absoluta; incluye
+  configuración de base de datos (`load_database_settings`) y seguridad JWT
+  (`load_security_settings`).
 - `backend/app/database.py`: motor SQLAlchemy y sesiones bajo demanda con psycopg.
 - `backend/check_db.py`: comprobación explícita mediante `SELECT 1`, sin DDL.
-- `backend/app/models.py`: Base, Vehiculo, Celda, Operador y Estancia; tablas en
-  singular y minúsculas.
-- `backend/app/schemas/vehiculo.py`: validación Pydantic y contratos de respuesta.
-- `backend/app/routers/vehiculos.py`: rutas CRUD con APIRouter.
-- `backend/app/services/vehiculo.py`: lógica de vehículos, transacciones y errores públicos.
-- `backend/app/schemas/celda.py`, `app/routers/celdas.py` y `app/services/celda.py`:
-  CRUD de celdas con código normalizado y tipo obligatorio `AUTO` o `MOTO`;
-  `GET /celdas/disponibilidad` devuelve estado y cupo por tipo.
-- `backend/app/schemas/estancia.py`, `app/routers/estancias.py` y
-  `app/services/estancia.py`: entrada sin `celda_id`, salida, cambio de celda y
-  consulta por placa; aquí viven las reglas de mensualidad y de tipo de celda.
+- `backend/app/models.py`: Base, Vehiculo, Celda, Usuario, Estancia y CambioCelda;
+  tablas en singular y minúsculas.
+- `backend/app/security.py`: hashing de contraseñas con bcrypt (costo 12) y
+  generación/verificación de tokens JWT HS256.
+- `backend/app/dependencies.py`: dependencias FastAPI para autenticación:
+  `usuario_actual` (cualquier usuario activo) y `requiere_administrador`
+  (exige rol `ADMINISTRADOR`).
+- `backend/app/schemas/`: contratos Pydantic por recurso (`vehiculo.py`,
+  `celda.py`, `usuario.py`, `estancia.py`, `auth.py`).
+- `backend/app/routers/`: routers FastAPI (`auth.py`, `vehiculos.py`, `celdas.py`,
+  `usuarios.py`, `estancias.py`). Todos los endpoints de operación y gestión
+  exigen autenticación previa.
+- `backend/app/services/`: lógica de negocio, transacciones y errores públicos
+  (`auth.py`, `vehiculo.py`, `celda.py`, `usuario.py`, `estancia.py`).
 - **Regla de capas:** los routers solo reciben la petición, delegan en un servicio
   de `app/services/` y devuelven la respuesta. Las consultas a la base, los
   `commit`/`rollback` y la traducción de errores no van en los routers.
-- `backend/scripts/cargar_datos_demo.py`: datos de demostración idempotentes; no
-  es una migración y solo debe ejecutarse en una base de demostración.
-- `backend/migrations/`: revisiones Alembic `0001` a `0004`; `backend/alembic.ini`
+- `backend/scripts/cargar_datos_demo.py`: datos de demostración idempotentes (80
+  celdas, 4 cuentas demo y 5 vehículos); no es una migración y solo debe
+  ejecutarse en una base de demostración.
+- `backend/migrations/`: revisiones Alembic `0001` a `0007`; `backend/alembic.ini`
   reutiliza la configuración privada.
 - `backend/.env.example`: plantilla pública; conservar cualquier `.env` existente y privado.
 - `backend/requirements.txt`: dependencias de ejecución y pruebas con versiones
   exactas, incluidas las transitivas.
 - `backend/.venv/`: entorno virtual local, excluido de Git.
 - `frontend/src/app/`: componentes standalone, configuración y rutas Angular.
-- `frontend/src/app/home/`: bienvenida y estado de salud de la API.
-- `frontend/src/app/operador/` y `frontend/src/app/seleccion-operador/`: inicio de
-  turno; `SesionOperador` guarda el operador activo en `sessionStorage`.
-- `frontend/src/app/guards/operador.guard.ts`: `operadorActivo` protege las
-  pantallas de operación.
-- `frontend/src/app/tablero/`: cuadrícula de celdas, cupo por tipo y consulta por placa.
-- `frontend/src/app/control-acceso/`: registrar entrada y corregir una entrada duplicada.
+- `frontend/src/app/panel/`: panel de resumen del parqueadero (ruta raíz `/`),
+  con KPIs, mapa de celdas agrupado por tipo con estados, placa en celdas
+  ocupadas, accesos rápidos y estado del servicio.
+- `frontend/src/app/login/`: inicio de sesión con usuario y contraseña.
+- `frontend/src/app/guards/sesion.guard.ts`: `sesionActiva` protege las rutas
+  internas; `soloAdministrador` protege `/gestion/usuarios` y `/gestion/celdas`.
+- `frontend/src/app/tablero/`: cuadrícula de celdas con 3 estados (`DISPONIBLE`,
+  `OCUPADA`, `MANTENIMIENTO`), cupo por tipo y consulta por placa.
+- `frontend/src/app/control-acceso/`: registrar entrada (la celda la asigna el
+  servidor) y corregir una entrada duplicada.
 - `frontend/src/app/registrar-salida/`: registrar salida y volver a la entrada si
   el vehículo no tiene estancia abierta.
 - `frontend/src/app/cambiar-celda/`: mover una estancia abierta a otra celda libre
-  del mismo tipo.
+  del mismo tipo; registra el movimiento en el historial.
+- `frontend/src/app/historial/`: consulta paginada de cambios de celda con fecha/hora
+  (Bogotá), placa, celda anterior, celda nueva y usuario.
 - `frontend/src/app/vehiculos/`: formulario reactivo y listado paginado de vehículos.
-- `frontend/src/app/celdas/`: gestión de celdas; `CeldasService` reutiliza la base de API.
-- `frontend/src/app/operadores/`: gestión de operadores.
-- `frontend/src/app/services/`: `ApiService`, `CeldasService`, `OperadoresService`,
-  `EstanciasService` y `SesionOperador`.
+- `frontend/src/app/celdas/`: mantenimiento de celdas (habilitar / poner en
+  mantenimiento); solo administradores.
+- `frontend/src/app/usuarios/`: administración de cuentas de operador (crear,
+  editar, activar/desactivar, restablecer contraseña); solo administradores.
+- `frontend/src/app/services/`: `ApiService`, `AuthService`, `CeldasService`,
+  `EstanciasService`, `SesionUsuario` y `UsuariosService`.
+- `frontend/src/app/interceptors/auth.interceptor.ts`: inyecta el token JWT
+  `Bearer` en cada petición saliente y limpia la sesión ante HTTP 401.
 - `frontend/src/app/utils/`: `fechas.ts` (hora de Bogotá) y `mensajes.ts`
   (mensajes de error compartidos de las pantallas de operación).
-- `frontend/src/app/services/api.service.ts`: llamadas HTTP y base de API centralizadas.
-- `frontend/src/app/models/vehiculo.ts`: contratos de solicitudes, respuestas y tipos.
-- `frontend/src/styles.css`: estilos globales; estilos de componentes en CSS.
-- `frontend/public/`: recursos estáticos que sí se versionan.
+- `frontend/src/styles.css`: variables CSS globales `--parkeo-*` y estilos base.
+- `frontend/public/`: recursos estáticos (`parkeo-logo.jpeg`).
 - `frontend/package.json` y `frontend/package-lock.json`: scripts, dependencias
   y versiones resueltas. Ambos se versionan.
-- `frontend/angular.json` y `frontend/tsconfig*.json`: configuración de compilación
-  y comprobación estricta.
 
 ## Herramientas y dependencias
 
@@ -68,10 +79,9 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
 - Usar exclusivamente `backend/.venv` para instalar paquetes y ejecutar Python
   del proyecto. No instalar dependencias del backend globalmente.
 - Usar Angular CLI 22 y TypeScript como dependencias locales. No actualizar sus
-  instalaciones globales. Para tareas de generación, usar CLI 22 mediante `npx`
-  dentro de `frontend`; por ejemplo, `npx.cmd @angular/cli@22 generate component nombre`.
-- Usar `npm.cmd ci` para reproducir la instalación existente. Cuando cambien las
-  dependencias, actualizar y conservar `package-lock.json` junto con `package.json`.
+  instalaciones globales.
+- Usar `npm.cmd ci` para reproducir la instalación existente.
+- No usar librerías de UI externas (sin Angular Material); estilos propios en CSS.
 - Al cambiar dependencias Python, actualizar las versiones fijadas en
   `requirements.txt` desde un entorno del proyecto limpio y verificar `pip check`.
 - No editar manualmente `.venv`, `node_modules`, `dist` ni otros archivos generados.
@@ -88,49 +98,29 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
   para ocultar errores de tipos o de plantillas.
 - Añadir o ajustar pruebas cuando cambie el comportamiento. Los endpoints nuevos
   deben probar su estado HTTP y su respuesta esperada.
-- Conservar el contrato de `/health` salvo que se solicite cambiarlo.
+- Conservar el contrato de `/health` (`{"status": "ok"}`).
 - Mantener restricciones de integridad en modelos y migraciones. Nunca aplicar
   migraciones a la base del usuario sin autorización; para revisión usar
   `python -m alembic -c alembic.ini upgrade head --sql` con el intérprete de `.venv`.
 - Mantener `/health` independiente de PostgreSQL. No conectar ni crear tablas al
-  importar módulos. No registrar credenciales, URL de conexión ni errores crudos
-  del controlador. Verificar PostgreSQL con `backend/check_db.py`; las pruebas
-  simuladas no prueban que exista una conexión local real.
-- La pantalla consulta `/health` mediante `HttpClient` al cargarse. El proxy de
-  desarrollo en `frontend/proxy.conf.json` dirige `/health`, `/vehiculos`,
-  `/celdas`, `/operadores` y `/estancias` (con sus subrutas) a `127.0.0.1:8000`.
-  Las pantallas de gestión usan `/gestion/vehiculos`, `/gestion/celdas` y
-  `/gestion/operadores` para no colisionar con las rutas API. Las llamadas pasan
-  por los servicios de `frontend/src/app/services/`. Mantener rutas relativas y
-  documentar cualquier integración que se añada.
-- Las pantallas de operación (`/tablero`, `/control-acceso`, `/salida`,
-  `/cambiar-celda`) exigen un turno activo mediante el guard `operadorActivo`;
-  no vuelvas a pedir el operador dentro de cada pantalla.
+  importar módulos. No registrar credenciales, URL de conexión ni errores crudos.
+- El proxy de desarrollo en `frontend/proxy.conf.json` dirige `/auth`, `/health`,
+  `/vehiculos`, `/celdas`, `/usuarios` y `/estancias` a `127.0.0.1:8000`.
+- Las pantallas internas están protegidas por `sesionActiva`; la sesión guarda
+  token y usuario en `sessionStorage` (`parkeo.sesion`).
+- El presupuesto de estilos por componente (`anyComponentStyle`) en Angular es
+  de 4 kB máximo de advertencia.
 
 ## Secretos y archivos excluidos
 
-El `.gitignore` de la raíz excluye entornos virtuales, dependencias instaladas,
-cachés, compilaciones, cobertura, logs, datos locales y patrones habituales de
-secretos. `frontend/.gitignore` añade las exclusiones generadas por Angular CLI.
-
 - Nunca incluir credenciales, tokens, contraseñas ni claves privadas en código,
-  pruebas, documentación o commits. Los patrones de `.gitignore` no detectan
-  todos los posibles secretos; revisar el contenido antes de versionarlo.
-- Usar variables de entorno para configuración privada. Las plantillas
-  `.env.example` y `.env.template` pueden versionarse solo con valores ficticios.
-- No colocar secretos en el frontend: su código y configuración compilados son
-  públicos para el navegador.
-- No versionar `.npmrc` ni `.pypirc` privados. Documentar la configuración pública
-  necesaria sin tokens.
-- `.gitignore` no deja de rastrear archivos ya versionados; si se detecta un
-  secreto existente, informar del hallazgo sin reproducir su valor.
-- Conservar fuentes, pruebas, documentación, configuraciones compartidas,
-  `requirements.txt` y `package-lock.json`.
+  pruebas, documentación o commits.
+- Las contraseñas demo documentadas (`Parkeo2026*`) son exclusivas para entornos
+  locales de desarrollo y pruebas.
+- Usar variables de entorno para configuración privada (`.env`).
+- No colocar secretos en el frontend: su código compilado es público.
 
 ## Comandos de verificación (PowerShell)
-
-Ejecutar desde la raíz del repositorio. `Push-Location` y `Pop-Location` permiten
-volver a la raíz aunque falle una comprobación.
 
 ### Backend
 
@@ -146,15 +136,8 @@ try {
 }
 ```
 
-La suite incluye pruebas de `/health`, CRUD y estancias sin iniciar un servidor
-externo. Starlette puede emitir un aviso de deprecación sobre `httpx`;
-distinguirlo de un fallo.
-
-Las pruebas de integración de vehículos, celdas, operadores y estancias se
-habilitan con `RUN_POSTGRES_TESTS=1` y requieren `autos_colombia` con la revisión
-`0004`. Usan rollback exterior y savepoints: no crear tablas ni alterar
-migraciones para probar. Los valores de las secuencias pueden avanzar. Ver
-`backend/README.md` para comandos completos.
+Las pruebas de integración con PostgreSQL se habilitan con `RUN_POSTGRES_TESTS=1`
+y requieren la base con migraciones aplicadas hasta la `0007`.
 
 ### Frontend
 
@@ -169,18 +152,3 @@ try {
     Pop-Location
 }
 ```
-
-Ejecutar las comprobaciones del proyecto afectado. Para cambios solo de
-documentación o exclusiones, revisar rutas, comandos y reglas sin reinstalar
-dependencias ni ejecutar suites ajenas al cambio. Informar qué se comprobó y
-cualquier limitación pendiente.
-
-Cuando se haya inicializado Git, revisar antes de preparar un commit:
-
-```powershell
-git status --short
-git diff --check
-git diff
-```
-
-No crear commits ni publicar cambios salvo que el usuario lo solicite.

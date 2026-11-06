@@ -4,139 +4,161 @@
 
 # Parkeo
 
-Sistema de gestión de parqueadero para Autos Colombia: vehículos y mensualidad,
-cuentas internas con roles, celdas, control diario de entradas y salidas, cambios
-de celda con historial y panel de ocupación.
+Sistema de gestión y control de parqueaderos para **Autos Colombia**: gestión de vehículos
+con mensualidades, cuentas internas con control de acceso por roles (`ADMINISTRADOR` y `OPERADOR`),
+mantenimiento de celdas con estados calculados (`DISPONIBLE`, `OCUPADA`, `MANTENIMIENTO`),
+control diario de entradas y salidas con asignación automática de celda, cambios de celda
+con historial auditable y panel general de ocupación en tiempo real.
 
-- **Backend:** FastAPI, SQLAlchemy y PostgreSQL, con migraciones Alembic.
-- **Frontend:** Angular 22 con componentes standalone, formularios reactivos y
-  CSS propio (sin Angular Material).
+- **Backend:** FastAPI, SQLAlchemy 2, Pydantic v2, bcrypt y PyJWT, con PostgreSQL y migraciones Alembic.
+- **Frontend:** Angular 22 con componentes standalone, señales (`Signals`), formularios reactivos y CSS propio (sin dependencias de librerías de UI externas).
 
-El historial detallado de cada etapa del proyecto quedó en
-[docs/historial.md](docs/historial.md).
+El historial detallado de cada entrega está en [docs/historial.md](docs/historial.md).
 
-## Qué permite hacer
+---
 
-- Gestionar vehículos con placa, marca, modelo, color, tipo y fecha de
-  vencimiento de la mensualidad.
-- Gestionar operadores y celdas; el tipo de celda solo puede ser `AUTO` o `MOTO`.
-- Iniciar turno con un operador y trabajar desde el tablero de celdas.
-- Registrar la entrada de un vehículo sin elegir celda: el sistema asigna la
-  primera celda libre del tipo que corresponde.
-- Registrar la salida y cambiar una estancia abierta a otra celda libre del
-  mismo tipo.
-- Consultar por placa si el vehículo está `DENTRO` o `FUERA` y si la mensualidad
-  está `VIGENTE` o `VENCIDA`.
-- Corregir una entrada duplicada cerrando la estancia anterior con una salida
-  normal y registrando una entrada nueva; el historial no se borra ni se edita.
+## Características principales
 
-## Requisitos
+- **Autenticación y roles:** Inicio de sesión con JWT HS256 y contraseñas hasheadas con bcrypt (costo 12). Cuentas diferenciadas por rol (`ADMINISTRADOR` para gestión de usuarios y mantenimiento de celdas; `OPERADOR` para la operación diaria).
+- **Panel de resumen (Dashboard):** KPIs de ocupación en tiempo real (celdas ocupadas, disponibles, en mantenimiento y total), porcentaje de ocupación, mapa interactivo agrupado por tipo de vehículo (`AUTOMOVIL` y `MOTO`) con visualización de placas en celdas ocupadas, accesos directos rápidos y monitoreo de salud de la API.
+- **Gestión de vehículos:** Registro y consulta de vehículos con placa, marca, modelo, color, tipo (`AUTOMOVIL`, `CAMIONETA`, `MOTO`) y fecha de vencimiento de la mensualidad.
+- **Control de accesos (Entrada):** Consulta de estado por placa y confirmación de entrada. El sistema asigna automáticamente la primera celda libre del tipo correspondiente; no permite ingresar vehículos con mensualidad vencida ni duplicar estancias abiertas.
+- **Salida vehicular:** Consulta y registro de salida con cierre de estancia en la hora exacta del servidor.
+- **Cambio de celda con historial auditable:** Reubicación de estancias activas hacia celdas libres del mismo tipo. Cada movimiento se registra de forma inmutable en la tabla `cambio_celda` guardando fecha/hora (hora de Bogotá), placa, celda origen, celda destino y usuario responsable.
+- **Consulta de historial:** Pantalla dedicada `/historial` con paginación de los movimientos de celda ordenados del más reciente al más antiguo.
+- **Administración de celdas:** Vista exclusiva para administradores donde se pueden habilitar o poner en mantenimiento celdas sin estancias activas.
+- **Administración de usuarios:** CRUD de cuentas de operador, activación/desactivación lógica y restablecimiento seguro de contraseñas.
 
-- Windows con PowerShell.
-- Python 3.13 (probado con 3.13.16).
-- Node.js 24 (mínimo 24.15.0) y npm 11.
-- PostgreSQL local con una base de datos y un usuario. El proyecto no instala
-  PostgreSQL ni crea la base.
+---
 
-## Instalación
+## Requisitos del sistema
 
-### Backend
+- Sistema operativo Windows con **PowerShell**.
+- **Python 3.13** (probado con 3.13.16).
+- **Node.js 24** (mínimo 24.15.0) y **npm 11**.
+- **PostgreSQL 17** con una base de datos creada (por defecto `autos_colombia`).
+
+---
+
+## Instalación y configuración
+
+### 1. Clonar el repositorio
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\backend'
+git clone https://github.com/Mosco16/Parkeo.git
+Set-Location -LiteralPath 'Parkeo'
+```
+
+### 2. Backend
+
+```powershell
+Set-Location -LiteralPath 'backend'
 py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 if (-not (Test-Path -LiteralPath .env)) { Copy-Item -LiteralPath .env.example -Destination .env }
 ```
 
-Edita `backend/.env` con los datos de tu PostgreSQL (`DB_HOST`, `DB_PORT`,
-`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_CONNECT_TIMEOUT`). No versiones `.env`
-ni compartas sus valores. Comprueba la conexión:
+Edita `backend/.env` con las credenciales de tu PostgreSQL local (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`). Comprueba la conexión:
 
 ```powershell
 .\.venv\Scripts\python.exe .\check_db.py
 ```
 
-### Frontend
+### 3. Frontend
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\frontend'
+Set-Location -LiteralPath '..\frontend'
 npm.cmd ci
 ```
 
-## Ejecución en Windows
-
-Terminal 1 (backend):
-
-```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\backend'
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Terminal 2 (frontend):
-
-```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\frontend'
-npm.cmd start -- --host 127.0.0.1 --port 4200
-```
-
-Abre <http://127.0.0.1:4200>. La API queda en <http://127.0.0.1:8000> y su
-documentación interactiva en <http://127.0.0.1:8000/docs>. El proxy de
-desarrollo (`frontend/proxy.conf.json`) dirige `/health`, `/vehiculos`,
-`/celdas`, `/operadores` y `/estancias` al backend local.
+---
 
 ## Base de datos y migraciones
 
-Las tablas se crean solo cuando ejecutas Alembic de forma explícita:
+Aplica las migraciones de Alembic (`0001` a `0007`) para crear y estructurar las tablas:
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\backend'
+Set-Location -LiteralPath '..\backend'
 .\.venv\Scripts\python.exe -m alembic -c .\alembic.ini upgrade head
-.\.venv\Scripts\python.exe -m alembic -c .\alembic.ini current
 ```
 
-Para revisar el SQL sin aplicarlo usa `upgrade head --sql`. No apliques
-migraciones a una base con datos que no controlas sin revisar antes ese SQL.
-El detalle de las revisiones `0001` a `0004` está en
-[backend/README.md](backend/README.md).
+### Cargar datos de demostración
 
-## Datos de demostración
-
-`backend/scripts/cargar_datos_demo.py` carga 80 celdas (A1–A70 `AUTO`, M1–M10
-`MOTO`), operadores de ejemplo y vehículos con vencimientos relativos a hoy en
-America/Bogota. Es idempotente y no es una migración. Ejecútalo solo en una base
-de demostración:
+El script `cargar_datos_demo.py` es idempotente y carga 80 celdas (A1–A70 `AUTO`, M1–M10 `MOTO`), 4 cuentas de usuario demostrativas y 5 vehículos con vencimientos relativos a hoy:
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\backend'
 .\.venv\Scripts\python.exe scripts\cargar_datos_demo.py
 ```
 
-## Pruebas
+### Credenciales de demostración
 
-Backend:
+| Usuario | Contraseña | Rol | Descripción |
+|---|---|---|---|
+| `admin` | `Parkeo2026*` | `ADMINISTRADOR` | Administrador general con acceso a usuarios y celdas |
+| `ana.gomez` | `Parkeo2026*` | `OPERADOR` | Operador para registro de entradas, salidas y reubicaciones |
+| `carlos.perez` | `Parkeo2026*` | `OPERADOR` | Operador de turno |
+| `laura.rios` | `Parkeo2026*` | `OPERADOR` | Operadora de turno |
+
+---
+
+## Ejecución del proyecto
+
+### Terminal 1 — Backend (FastAPI)
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\backend'
+Set-Location -LiteralPath 'backend'
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+- API Base: <http://127.0.0.1:8000>
+- Documentación interactiva Swagger: <http://127.0.0.1:8000/docs>
+- Estado de salud: <http://127.0.0.1:8000/health>
+
+### Terminal 2 — Frontend (Angular)
+
+```powershell
+Set-Location -LiteralPath 'frontend'
+npm.cmd start -- --host 127.0.0.1 --port 4200
+```
+
+Accede a la aplicación en <http://127.0.0.1:4200>.
+
+---
+
+## Ejecución de pruebas
+
+### Backend (pytest)
+
+```powershell
+Set-Location -LiteralPath 'backend'
 .\.venv\Scripts\python.exe -m pip check
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Las pruebas de integración contra PostgreSQL se habilitan con
-`$env:RUN_POSTGRES_TESTS = '1'` y requieren las migraciones aplicadas. Usan
-transacciones revertidas: no borran ni crean datos permanentes.
-
-Frontend:
+Para ejecutar las pruebas de integración directa contra la base PostgreSQL:
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\frontend'
+$env:RUN_POSTGRES_TESTS = '1'
+try {
+    .\.venv\Scripts\python.exe -m pytest -q
+} finally {
+    Remove-Item Env:RUN_POSTGRES_TESTS -ErrorAction SilentlyContinue
+}
+```
+
+### Frontend (Vitest)
+
+```powershell
+Set-Location -LiteralPath 'frontend'
 npm.cmd run build
 npm.cmd test -- --watch=false
 ```
 
-## Documentación
+---
 
-- [backend/README.md](backend/README.md): API, migraciones, modelos y mensajes de error.
-- [frontend/README.md](frontend/README.md): pantallas, rutas y verificación.
-- [AGENTS.md](AGENTS.md): convenciones de trabajo del repositorio.
-- [docs/historial.md](docs/historial.md): historial completo de las etapas anteriores.
+## Documentación adicional
+
+- [backend/README.md](backend/README.md): especificación de endpoints, schemas y lógica de capas.
+- [frontend/README.md](frontend/README.md): rutas, guards de navegación y componentes.
+- [AGENTS.md](AGENTS.md): lineamientos y convenciones de desarrollo.
+- [docs/historial.md](docs/historial.md): registro histórico de iteraciones.

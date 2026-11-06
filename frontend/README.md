@@ -1,86 +1,55 @@
-# Frontend de Autos Colombia
+# Frontend de Parkeo
 
-Angular 22 con componentes standalone, TypeScript estricto, formularios reactivos
-y CSS propio (sin Angular Material). Las dependencias son locales; conserva
-`package-lock.json` y usa `npm.cmd ci` al reinstalar.
+Aplicación cliente de **Parkeo** desarrollada en Angular 22 con componentes standalone,
+TypeScript estricto, gestión de estado reactivo mediante Signals, formularios reactivos
+y estilos propios en CSS sin librerías de UI externas.
 
-## Iniciar en Windows (PowerShell)
+## Requisitos y ejecución
 
-Mantén el backend activo en otra terminal, como se explica en el
-[README principal](../README.md#ejecución-en-windows).
+Requiere Node.js 24 (mínimo 24.15.0) y npm 11. Mantén la API corriendo en el puerto 8000.
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\frontend'
+Set-Location -LiteralPath 'frontend'
 npm.cmd ci
 npm.cmd start -- --host 127.0.0.1 --port 4200
 ```
 
-Abre <http://127.0.0.1:4200>.
+Acceso: <http://127.0.0.1:4200>.
 
 ## Pantallas y rutas
 
-| Ruta | Pantalla | Qué hace |
-| --- | --- | --- |
-| `/` | Inicio | Bienvenida y estado de `/health`. |
-| `/operador` | Iniciar turno | Elige el operador activo y lo guarda en `sessionStorage`. |
-| `/tablero` | Tablero | Cuadrícula de celdas `LIBRE`/`OCUPADA`, cupo por tipo y consulta por placa. |
-| `/control-acceso` | Registrar entrada | Consulta la placa, muestra la celda sugerida y registra la entrada. |
-| `/salida` | Registrar salida | Cierra la estancia abierta; si no hay ninguna, ofrece ir a la entrada. |
-| `/cambiar-celda` | Cambiar celda | Mueve una estancia abierta a otra celda libre del mismo tipo. |
-| `/gestion/vehiculos` | Vehículos | CRUD con fecha de vencimiento de la mensualidad. |
-| `/gestion/celdas` | Celdas | CRUD; el tipo es `AUTO` o `MOTO`. |
-| `/gestion/operadores` | Operadores | CRUD con teléfono opcional. |
+| Ruta | Pantalla | Acceso | Propósito |
+|---|---|---|---|
+| `/login` | Iniciar sesión | Público | Autenticación mediante usuario y contraseña con JWT |
+| `/` | Panel de resumen | Autenticado | KPIs de ocupación, mapa de celdas por tipo con placa, accesos directos y salud de la API |
+| `/tablero` | Tablero | Autenticado | Visualización del estado de celdas (`DISPONIBLE`, `OCUPADA`, `MANTENIMIENTO`) y consulta por placa |
+| `/control-acceso` | Entrada | Autenticado | Consulta de vehículos y confirmación de ingreso con asignación automática de celda |
+| `/salida` | Salida | Autenticado | Cierre de estancias abiertas en hora del servidor |
+| `/cambiar-celda` | Cambiar celda | Autenticado | Reubicación de estancias activas a celdas disponibles del mismo tipo |
+| `/historial` | Historial | Autenticado | Consulta paginada y auditable de los movimientos de cambio de celda |
+| `/gestion/vehiculos` | Vehículos | Autenticado | CRUD de vehículos con control de mensualidad |
+| `/gestion/celdas` | Celdas | Solo Administrador | Mantenimiento de celdas (activación y puesta en mantenimiento) |
+| `/gestion/usuarios` | Usuarios | Solo Administrador | Administración de cuentas de operador, estados y reseteo de contraseñas |
 
-Las rutas de operación (`/tablero`, `/control-acceso`, `/salida`,
-`/cambiar-celda`) están protegidas por el guard `operadorActivo`: si no hay turno
-iniciado, redirigen a `/operador`. La navegación superior cambia a **Turno: nombre**
-con la opción **Cambiar operador** cuando hay una sesión activa.
+## Seguridad y Guards
+
+- `sesionActiva`: Bloquea el acceso a todas las rutas internas si no existe un token JWT válido en `sessionStorage` (`parkeo.sesion`).
+- `soloAdministrador`: Restringe `/gestion/usuarios` y `/gestion/celdas` exclusivamente a usuarios con rol `ADMINISTRADOR`.
+- `authInterceptor`: Adjunta la cabecera `Authorization: Bearer <token>` a cada petición HTTP y redirige a `/login` ante respuestas HTTP 401.
 
 ## Proxy de desarrollo
 
-`proxy.conf.json` conecta con FastAPI en `127.0.0.1:8000`:
-
-- `/health`
-- `/vehiculos` y `/vehiculos/**`
-- `/celdas` y `/celdas/**`
-- `/operadores` y `/operadores/**`
+El archivo `proxy.conf.json` redirige las peticiones locales a la API de FastAPI en `http://127.0.0.1:8000`:
+- `/auth/**`
 - `/estancias/**`
+- `/usuarios/**`
+- `/celdas/**`
+- `/vehiculos/**`
+- `/health`
 
-Reinicia el servidor de Angular si cambias ese archivo. En producción configura
-estas rutas en el servidor web; `ng build` no incluye un proxy.
-
-## Recorrido de demostración
-
-1. Carga los datos de ejemplo con `backend/scripts/cargar_datos_demo.py` (ver el
-   [README principal](../README.md#datos-de-demostración)).
-2. Abre `/operador`, elige un operador y pulsa **Iniciar turno**. Irás al tablero.
-3. En `/tablero` revisa el cupo por tipo y consulta la placa `ABC123`.
-4. En `/control-acceso` registra la entrada de `ABC123`: no se elige celda, el
-   sistema asigna la primera libre del tipo.
-5. Repite con `DEF456` para ver el bloqueo por mensualidad vencida.
-6. En `/cambiar-celda` mueve `ABC123` a otra celda libre del mismo tipo.
-7. En `/salida` cierra la estancia y comprueba que el vehículo queda `FUERA`.
-
-Las pantallas de operación muestran los textos del backend tal cual. Los fallos
-de red y de validación usan los mensajes compartidos de `src/app/utils/mensajes.ts`.
-
-## Compilar y probar
+## Compilación y pruebas
 
 ```powershell
-Set-Location -LiteralPath 'C:\ruta\a\AutosColombia\frontend'
 npm.cmd run build
 npm.cmd test -- --watch=false
 ```
-
-`npm.cmd test` usa Vitest con jsdom y compila todo el programa: un error de
-plantilla o de tipos aparece aunque la prueba no toque ese componente.
-
-## Estructura
-
-- `src/app/services/`: `ApiService`, `CeldasService`, `OperadoresService`,
-  `EstanciasService` y `SesionOperador`.
-- `src/app/models/`: contratos de vehículos, celdas, operadores y estancias.
-- `src/app/guards/operador.guard.ts`: exige turno activo.
-- `src/app/utils/`: `fechas.ts` (America/Bogota) y `mensajes.ts`.
-- `src/app/<pantalla>/`: componente standalone con su plantilla, CSS y spec.
-- `src/styles.css`: estilos globales.
