@@ -214,9 +214,9 @@ Credenciales de demostración (solo desarrollo, documentadas en README):
 | T3 | Migración 0005, modelo `Usuario`, backfill y script de admin | S2, S4 | ✅ `401d1ce` `feat(backend): migra operadores a usuarios con rol y credenciales` |
 | T4 | `/auth/login`, `/auth/me`, dependencias de rol, proteger routers | S2, S3 | ✅ `f3a07d3` `feat(backend): implementa inicio de sesion y proteccion por rol` |
 | T5 | Entrada/salida con usuario autenticado; pruebas actualizadas | S7 | ✅ `a64933b` `refactor(backend): relaciona entradas y salidas con el usuario de la sesion` |
-| T6 | CRUD de cuentas de operador, estado y restablecimiento | S4 | `feat(backend): gestiona cuentas de operador` |
-| T7 | Migración 0006, `activa`, disponibilidad de 3 estados, toggle | S5 | `feat(backend): agrega mantenimiento de celdas y disponibilidad por estado` |
-| T8 | Migración 0007, historial en cambio de celda, endpoint | S6 | `feat(backend): registra el historial de cambios de celda` |
+| T6 | CRUD de cuentas de operador, estado y restablecimiento | S4 | ✅ `4b91d46` `test(backend): cubre la gestion de cuentas de operador` |
+| T7 | Migración 0006, `activa`, disponibilidad de 3 estados, toggle | S5 | ✅ `10b589f` `feat(backend): agrega mantenimiento de celdas y disponibilidad por estado` |
+| T8 | Migración 0007, historial en cambio de celda, endpoint | S6 | ✅ `124ff7f` `feat(backend): registra el historial de cambios de celda` |
 | T9 | Frontend auth: servicio, interceptor, guards, login, quitar selector | S2, S3 | `feat(frontend): agrega inicio de sesion y rutas protegidas` |
 | T10 | Shell, sidebar, topbar, tema y rebranding | S1, S3 | `feat(frontend): aplica la identidad visual y el menu por rol` |
 | T11 | Dashboard con KPIs, mapa, accesos rápidos y perfiles | S8 | `feat(frontend): agrega el panel de resumen del parqueadero` |
@@ -314,5 +314,37 @@ PostgreSQL habilitado.
 - Los mensajes de commit se escriben con `UTF8Encoding($false)`: `Out-File -Encoding utf8` de
   PowerShell 5.1 agrega BOM al asunto (se corrigió con `--amend` una vez).
 - `.atl/` y `.engram/` siguen sin versionar a propósito.
-- Siguiente: T6 (verificar/cerrar el CRUD de cuentas y sus pruebas), T7 y T8; las pruebas de
-  PostgreSQL quedan pendientes de autorización para aplicar `0005`–`0007`.
+
+### L7 — Backend de la iteración 2 cerrado (5 nov 2026)
+
+**T6 (`4b91d46`, 2 archivos, +102/−4).**
+- Pruebas de restablecimiento de contraseña (hash bcrypt, clave inválida `422`), cambio de
+  estado, `404` de cuentas inexistentes, ausencia de borrado físico y filtro del listado por
+  rol `OPERADOR`.
+- En la integración, la clave restablecida inicia sesión, la anterior deja de servir y una
+  cuenta desactivada responde `403`. El teléfono sigue opcional por la decisión 9 de EA1
+  (migración `0004`).
+- Evidencia: **182 passed / 25 skipped**.
+
+**T7 (`10b589f`, 11 archivos, +318/−16).**
+- Migración `0006` agrega `celda.activa` (`NOT NULL DEFAULT true`) sin recrear la tabla.
+- `PATCH /celdas/{id}/estado` (solo administrador) enciende o apaga una celda; apagar una
+  celda con estancia abierta responde `409`.
+- La disponibilidad calcula `DISPONIBLE` / `OCUPADA` / `MANTENIMIENTO` e incluye `activa`.
+  Solo las celdas activas cuentan como libres, se ofrecen en la entrada y se aceptan como
+  destino de un cambio de celda.
+- Evidencia: SQL offline de `0005:0006` y su downgrade revisado; **192 passed / 26 skipped**.
+
+**T8 (`124ff7f`, 9 archivos, +465/−10).**
+- Migración `0007` crea `cambio_celda` append-only con FKs `RESTRICT`, check de celdas
+  distintas e índice por `fecha_hora`; el downgrade elimina índice y tabla.
+- `POST /estancias/cambiar-celda` recibe el usuario autenticado, rechaza la misma celda y
+  escribe el historial en la misma transacción. Un cambio inválido no deja registro.
+- `GET /estancias/historial-cambios` pagina con `offset`/`limit` y devuelve placa, códigos
+  anterior/nuevo y nombre del usuario, ordenado por `fecha_hora DESC, id DESC`.
+- Evidencia: SQL offline de `0007` y su downgrade revisado; **204 passed / 26 skipped**.
+
+**Siguiente.** T9–T15 (frontend: autenticación, shell por rol, panel, usuarios, celdas,
+historial y adaptación de las pantallas de operación) y T16 (datos demo y documentación).
+Sigue pendiente la autorización expresa para aplicar `0005`–`0007` a la base local y correr
+las pruebas de PostgreSQL con `RUN_POSTGRES_TESTS=1`.
