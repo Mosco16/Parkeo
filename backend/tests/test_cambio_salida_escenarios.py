@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.database import get_engine
 from app.dependencies import usuario_actual
 from app.main import app
-from app.models import Celda, Estancia, Usuario, Vehiculo
+from app.models import CambioCelda, Celda, Estancia, Usuario, Vehiculo
 
 from conftest import usuario_de_prueba
 
@@ -32,7 +32,7 @@ def datos():
     engine = get_engine()
     with engine.connect() as c:
         assert c.scalar(text('SELECT current_database()')) == 'autos_colombia'
-        assert int(c.scalar(text('SELECT version_num FROM alembic_version'))) >= 5
+        assert int(c.scalar(text('SELECT version_num FROM alembic_version'))) >= 7
 
     token = 'TEST-CAM-' + uuid4().hex.upper()
     vigente = date.today() + timedelta(days=30)
@@ -62,6 +62,7 @@ def datos():
             'vehiculos': [vehiculo.id for vehiculo in vehiculos.values()],
             'celdas': [c.id for c in celdas],
             'usuario': usuario.id,
+            'nombre_usuario': usuario.nombre,
         }
     app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
         id=data['usuario'], rol='OPERADOR'
@@ -71,6 +72,16 @@ def datos():
     finally:
         app.dependency_overrides.pop(usuario_actual, None)
         with Session(engine) as s, s.begin():
+            # El historial referencia la estancia con RESTRICT: primero se limpia.
+            s.execute(
+                delete(CambioCelda).where(
+                    CambioCelda.estancia_id.in_(
+                        select(Estancia.id).where(
+                            Estancia.vehiculo_id.in_(data['vehiculos'])
+                        )
+                    )
+                )
+            )
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(data['vehiculos'])))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(data['vehiculos'])))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
@@ -103,12 +114,21 @@ def prueba_estado_celda(datos, celda_id, esperado):
     assert next(c for c in celdas if c['id'] == celda_id)['estado'] == esperado
 
 
+def historial(d, limite=100):
+    with TestClient(app) as client:
+        respuesta = client.get(f'/estancias/historial-cambios?limit={limite}')
+        assert respuesta.status_code == 200
+        return respuesta.json()
+
+
 def test_e10_cambio_a_otra_celda_libre_del_mismo_tipo(datos):
-    """E-10 / RN-CAN-01: la estancia queda en la celda nueva."""
+    """E-10 / RN-CAN-01: la estancia queda en la celda nueva y se registra el historial."""
     d = datos
     with TestClient(app) as client:
         assert client.post('/estancias/entrada', json=entrada(d)).status_code == 201
         actual = estado(d)['estancia']['celda']['id']
+        estancia_id = estado(d)['estancia']['id']
+        codigos = {c['id']: c['codigo'] for c in disponibilidad(client)['celdas']}
         libres = [
             c for c in disponibilidad(client)['celdas']
             if c['tipo'] == 'AUTO' and c['estado'] == 'DISPONIBLE' and c['id'] != actual
@@ -126,13 +146,28 @@ def test_e10_cambio_a_otra_celda_libre_del_mismo_tipo(datos):
     prueba_estado_celda(d, actual, 'DISPONIBLE')
     prueba_estado_celda(d, destino, 'OCUPADA')
 
+    # S6: el historial guarda celdas, fecha/hora y el usuario autenticado.
+    filas = [i for i in historial(d)['items'] if i['placa'] == d['placas']['auto']]
+    assert len(filas) == 1
+    fila = filas[0]
+    assert fila['celda_anterior'] == codigos[actual]
+    assert fila['celda_nueva'] == codigos[destino]
+    assert fila['usuario'] == d['nombre_usuario']
+    assert datetime.fromisoformat(fila['fecha_hora']).tzinfo is not None
+    with Session(get_engine()) as s:
+        assert s.scalar(
+            select(func.count()).select_from(CambioCelda)
+            .where(CambioCelda.estancia_id == estancia_id)
+        ) == 1
+
 
 def test_e11_cambio_a_celda_ocupada_o_de_otro_tipo_no_cambia_nada(datos):
-    """E-11 / RN-CAN-02: celda ocupada o de otro tipo devuelve 409 sin cambios."""
+    """E-11 / RN-CAN-02: celda ocupada, de otro tipo o la misma no cambia nada."""
     d = datos
     with TestClient(app) as client:
         assert client.post('/estancias/entrada', json=entrada(d)).status_code == 201
         original = estado(d)['estancia']['celda']['id']
+        estancia_id = estado(d)['estancia']['id']
 
         assert client.post('/estancias/entrada', json=entrada(d, 'auto2')).status_code == 201
         ocupada = estado(d, 'auto2')['estancia']['celda']['id']
@@ -148,9 +183,22 @@ def test_e11_cambio_a_celda_ocupada_o_de_otro_tipo_no_cambia_nada(datos):
         assert cambio.status_code == 409
         assert cambio.json()['detail'] == CELDA_NO_DISPONIBLE
 
+        # S6: la misma celda también se rechaza y no genera historial.
+        cambio = client.post('/estancias/cambiar-celda',
+                             json={'placa': d['placas']['auto'], 'celda_id': original})
+        assert cambio.status_code == 409
+        assert 'distinta' in cambio.json()['detail']
+
         assert estado(d)['estancia']['celda']['id'] == original
     prueba_estado_celda(d, original, 'OCUPADA')
     prueba_estado_celda(d, ocupada, 'OCUPADA')
+
+    assert [i for i in historial(d)['items'] if i['placa'] == d['placas']['auto']] == []
+    with Session(get_engine()) as s:
+        assert s.scalar(
+            select(func.count()).select_from(CambioCelda)
+            .where(CambioCelda.estancia_id == estancia_id)
+        ) == 0
 
 
 def test_e12_salida_cierra_la_estancia_y_libera_la_celda(datos):

@@ -32,6 +32,7 @@ def test_openapi_y_salud():
         schema = client.get('/openapi.json').json()
         for path, method in [('/estancias/entrada', 'post'), ('/estancias/salida', 'post'),
                              ('/estancias/cambiar-celda', 'post'),
+                             ('/estancias/historial-cambios', 'get'),
                              ('/estancias/vehiculo/{placa}', 'get'),
                              ('/celdas/disponibilidad', 'get')]:
             assert method in schema['paths'][path]

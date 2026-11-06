@@ -11,6 +11,7 @@ from app.schemas.estancia import (
     EstanciaAbiertaRespuesta,
     EstanciaRespuesta,
     EstadoVehiculoRespuesta,
+    HistorialCambiosPagina,
     SalidaCrear,
 )
 from app.schemas.vehiculo import Placa
@@ -35,8 +36,19 @@ def salida(
 
 
 @router.post("/cambiar-celda", response_model=EstanciaAbiertaRespuesta)
-def cambiar_celda(data: CambioCeldaCrear, session: DatabaseSession) -> EstanciaAbiertaRespuesta:
-    return ServicioEstancia(session).cambiar_celda(data)
+def cambiar_celda(
+    data: CambioCeldaCrear, session: DatabaseSession, usuario: UsuarioAutenticado
+) -> EstanciaAbiertaRespuesta:
+    return ServicioEstancia(session).cambiar_celda(data, usuario)
+
+
+@router.get("/historial-cambios", response_model=HistorialCambiosPagina)
+def historial_cambios(
+    session: DatabaseSession,
+    offset: Annotated[int, Query(ge=0, le=9223372036854775807)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+):
+    return ServicioEstancia(session).historial_cambios(offset, limit)
 
 
 @router.get("/vehiculo/{placa}", response_model=EstadoVehiculoRespuesta)

@@ -4,10 +4,10 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.config import ZONA_HORARIA
-from app.models import Celda, Estancia, Usuario, Vehiculo, required_text
+from app.models import CambioCelda, Celda, Estancia, Usuario, Vehiculo, required_text
 from app.schemas.celda import CeldaRespuesta
 from app.schemas.estancia import (
     CambioCeldaCrear,
@@ -170,7 +170,9 @@ class ServicioEstancia:
         return EstanciaRespuesta.model_validate(estancia)
 
     @transaccion
-    def cambiar_celda(self, data: CambioCeldaCrear) -> EstanciaAbiertaRespuesta:
+    def cambiar_celda(
+        self, data: CambioCeldaCrear, usuario: Usuario
+    ) -> EstanciaAbiertaRespuesta:
         vehiculo = self._vehiculo(data.placa)
         estancia = self.session.scalar(
             select(Estancia)
@@ -184,7 +186,11 @@ class ServicioEstancia:
         if celda_destino is None:
             raise EstanciaError(404, "Celda no encontrada.")
 
-        celda_actual = self.session.get(Celda, estancia.celda_id)
+        celda_anterior_id = estancia.celda_id
+        if celda_destino.id == celda_anterior_id:
+            raise EstanciaError(409, "La celda de destino debe ser distinta a la actual.")
+
+        celda_actual = self.session.get(Celda, celda_anterior_id)
         tipo_requerido = tipo_celda_requerido(vehiculo)
         if (
             not celda_destino.activa
@@ -211,12 +217,50 @@ class ServicioEstancia:
             if code == "23505" and constraint == "uq_estancia_celda_abierta":
                 raise EstanciaError(409, "La celda no está disponible o es de otro tipo.") from None
             raise
+        # D4: el historial se escribe en la misma transacción que el cambio.
+        self.session.add(
+            CambioCelda(
+                estancia_id=estancia.id,
+                celda_anterior_id=celda_anterior_id,
+                celda_nueva_id=celda_destino.id,
+                usuario_id=usuario.id,
+                fecha_hora=datetime.now(timezone.utc),
+            )
+        )
+        self.session.flush()
         self.session.refresh(estancia)
         celda_final = self.session.get(Celda, estancia.celda_id)
         return EstanciaAbiertaRespuesta(
             **EstanciaRespuesta.model_validate(estancia).model_dump(),
             celda=CeldaRespuesta.model_validate(celda_final),
         )
+
+    @transaccion
+    def historial_cambios(self, offset: int, limit: int) -> dict:
+        anterior = aliased(Celda)
+        nueva = aliased(Celda)
+        consulta = (
+            select(
+                CambioCelda.id,
+                CambioCelda.fecha_hora,
+                Vehiculo.placa,
+                anterior.codigo.label("celda_anterior"),
+                nueva.codigo.label("celda_nueva"),
+                Usuario.nombre.label("usuario"),
+            )
+            .select_from(CambioCelda)
+            .join(Estancia, Estancia.id == CambioCelda.estancia_id)
+            .join(Vehiculo, Vehiculo.id == Estancia.vehiculo_id)
+            .join(anterior, anterior.id == CambioCelda.celda_anterior_id)
+            .join(nueva, nueva.id == CambioCelda.celda_nueva_id)
+            .join(Usuario, Usuario.id == CambioCelda.usuario_id)
+            .order_by(CambioCelda.fecha_hora.desc(), CambioCelda.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        total = self.session.scalar(select(func.count()).select_from(CambioCelda))
+        items = [dict(fila._mapping) for fila in self.session.execute(consulta)]
+        return {"items": items, "total": total, "offset": offset, "limit": limit}
 
     @transaccion
     def consultar(self, placa: str) -> EstadoVehiculoRespuesta:

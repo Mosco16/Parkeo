@@ -53,3 +53,27 @@ class EstadoVehiculoRespuesta(BaseModel):
     estancia: EstanciaAbiertaRespuesta | None
     mensualidad: Literal["VIGENTE", "VENCIDA"]
     celda_sugerida: CeldaRespuesta | None = None
+
+
+class CambioCeldaHistorial(BaseModel):
+    """S6: una fila del historial con placa, códigos y nombre del usuario."""
+
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    fecha_hora: datetime
+    placa: str
+    celda_anterior: str
+    celda_nueva: str
+    usuario: str
+
+    @field_validator("fecha_hora")
+    @classmethod
+    def fecha_utc(cls, value: datetime) -> datetime:
+        return value.astimezone(timezone.utc)
+
+
+class HistorialCambiosPagina(BaseModel):
+    items: list[CambioCeldaHistorial]
+    total: int
+    offset: int
+    limit: int

@@ -185,3 +185,47 @@ class Estancia(Base):
         self.salida = fecha_salida
         self.usuario_salida = usuario
         self.usuario_salida_id = usuario.id
+
+
+class CambioCelda(Base):
+    """Historial append-only de los cambios de celda (S6, D4)."""
+
+    __tablename__ = "cambio_celda"
+    __table_args__ = (
+        CheckConstraint(
+            "celda_anterior_id <> celda_nueva_id",
+            name="ck_cambio_celda_celdas_distintas",
+        ),
+        Index("ix_cambio_celda_fecha_hora", "fecha_hora"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    estancia_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey(
+            "estancia.id", name="fk_cambio_celda_estancia", ondelete="RESTRICT"
+        ),
+        nullable=False,
+    )
+    celda_anterior_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey(
+            "celda.id", name="fk_cambio_celda_celda_anterior", ondelete="RESTRICT"
+        ),
+        nullable=False,
+    )
+    celda_nueva_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey(
+            "celda.id", name="fk_cambio_celda_celda_nueva", ondelete="RESTRICT"
+        ),
+        nullable=False,
+    )
+    usuario_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("usuario.id", name="fk_cambio_celda_usuario", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    fecha_hora: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
