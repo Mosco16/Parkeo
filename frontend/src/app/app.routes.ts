@@ -39,6 +39,12 @@ export const routes: Routes = [
     loadComponent: () => import('./celdas/celdas').then((m) => m.Celdas),
   },
   {
+    path: 'gestion/usuarios',
+    title: 'Usuarios | Parkeo',
+    canActivate: [sesionActiva, soloAdministrador],
+    loadComponent: () => import('./usuarios/usuarios').then((m) => m.Usuarios),
+  },
+  {
     path: '',
     pathMatch: 'full',
     title: 'Inicio | Parkeo',

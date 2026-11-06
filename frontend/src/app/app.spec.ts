@@ -58,18 +58,20 @@ describe('Shell de la aplicación', () => {
     expect(elemento.querySelector('.session-name small')?.textContent).toBe('Administrador');
   });
 
-  it('reserva la administración de celdas para el administrador', () => {
+  it('reserva la administración para el administrador', () => {
     iniciar('OPERADOR');
     const elemento = crear().nativeElement as HTMLElement;
 
     expect(elemento.querySelector('a[href="/gestion/celdas"]')).toBeNull();
+    expect(elemento.querySelector('a[href="/gestion/usuarios"]')).toBeNull();
     expect(elemento.querySelector('a[href="/gestion/vehiculos"]')?.textContent).toBe('Vehículos');
   });
 
-  it('muestra celdas al administrador', () => {
+  it('muestra usuarios y celdas al administrador', () => {
     iniciar('ADMINISTRADOR');
     const elemento = crear().nativeElement as HTMLElement;
 
+    expect(elemento.querySelector('a[href="/gestion/usuarios"]')?.textContent).toBe('Usuarios');
     expect(elemento.querySelector('a[href="/gestion/celdas"]')?.textContent).toBe('Celdas');
   });
 

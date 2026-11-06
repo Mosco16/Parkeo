@@ -66,11 +66,6 @@ button.primary {
 button.primary:hover:not(:disabled) {
   background: #0a1e33;
 }
-button.danger {
-  background: #a03930;
-  color: white;
-  border-color: #a03930;
-}
 button.delete-link {
   color: #a03930;
 }
@@ -139,10 +134,6 @@ select {
   background: #fff0ec;
   color: #923b2e;
 }
-.confirmation {
-  border-color: #d4a899;
-  background: #fffaf7;
-}
 .list-heading {
   margin-bottom: 24px;
 }
@@ -152,6 +143,18 @@ select {
   padding: 3px 9px;
   border-radius: 15px;
   font-size: 13px;
+}
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #163c63;
+  background: #e6eff8;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+.badge.inactivo {
+  color: #923b2e;
+  background: #fff0ec;
 }
 .table-scroll {
   overflow-x: auto;
@@ -182,13 +185,6 @@ thead th {
   padding: 7px 10px;
   margin-right: 5px;
 }
-.type-tag {
-  font-size: 11px;
-  color: #26456b;
-  background: #eef2f8;
-  padding: 5px 8px;
-  border-radius: 6px;
-}
 .pagination {
   margin-top: 24px;
   font-size: 13px;
@@ -208,9 +204,6 @@ thead th {
   white-space: nowrap;
 }
 @media (max-width: 760px) {
-  .form-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .panel {
     padding: 18px;
   }

@@ -65,6 +65,13 @@
         @if (administrador()) {
           <p class="menu-group">Administración</p>
           <a
+            routerLink="/gestion/usuarios"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            (click)="cerrarMenu()"
+            >Usuarios</a
+          >
+          <a
             routerLink="/gestion/celdas"
             routerLinkActive="active"
             ariaCurrentWhenActive="page"

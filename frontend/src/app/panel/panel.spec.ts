@@ -102,24 +102,24 @@ describe('Panel de resumen', () => {
     );
   });
 
-  it('ofrece gestionar celdas al administrador', () => {
+  it('ofrece gestionar usuarios y celdas al administrador', () => {
     const fixture = crear('ADMINISTRADOR');
     responder();
     fixture.detectChanges();
+    const elemento = fixture.nativeElement as HTMLElement;
 
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('a[href="/gestion/celdas"]'),
-    ).not.toBeNull();
+    expect(elemento.querySelector('a[href="/gestion/usuarios"]')).not.toBeNull();
+    expect(elemento.querySelector('a[href="/gestion/celdas"]')).not.toBeNull();
   });
 
-  it('no ofrece gestionar celdas al operador', () => {
+  it('no ofrece la administración al operador', () => {
     const fixture = crear('OPERADOR');
     responder();
     fixture.detectChanges();
+    const elemento = fixture.nativeElement as HTMLElement;
 
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('a[href="/gestion/celdas"]'),
-    ).toBeNull();
+    expect(elemento.querySelector('a[href="/gestion/usuarios"]')).toBeNull();
+    expect(elemento.querySelector('a[href="/gestion/celdas"]')).toBeNull();
   });
 
   it('informa el error al cargar y permite reintentar', () => {
