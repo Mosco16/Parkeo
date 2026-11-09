@@ -32,6 +32,12 @@ def transaccion(operation):
     @wraps(operation)
     def wrapped(self, *args, **kwargs):
         try:
+            if self.session.in_transaction():
+                # El guard de autenticación ya abrió una transacción implícita.
+                # Ejecutamos sin abrir una nueva y confirmamos al final.
+                result = operation(self, *args, **kwargs)
+                self.session.commit()
+                return result
             with self.session.begin():
                 return operation(self, *args, **kwargs)
         except EstanciaError:
