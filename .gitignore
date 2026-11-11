@@ -62,3 +62,8 @@ Desktop.ini
 .history/
 *.swp
 *.swo
+
+# Artefactos locales de herramientas de asistencia
+.atl/
+.engram/
+.codegraph/
