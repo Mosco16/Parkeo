@@ -20,7 +20,7 @@ Un archivo por caso, con esta forma:
 
 - `<ID>` es el identificador del caso en el Excel: `US-01`, `PE-01`, `CE-01`.
 - `<slug>` es un resumen corto en minúsculas con guiones, sin acentos ni espacios.
-- Si un caso necesita más de una captura, se numera al final: `CE-07_entrada-celda-asignada-1.png`, `-2.png`.
+- Si un caso necesita más de una captura, cada archivo lleva un slug distinto que describa su parte del caso: `US-10_obligatorios-vacios.png`, `US-10_contrasena-corta.png`.
 - Formato **PNG**. No usar JPEG: el texto de los mensajes de error se degrada y deja de ser legible.
 
 El prefijo `ID_` no es decorativo: permite ordenar la carpeta alfabéticamente y que cada archivo quede alineado con su fila del Excel sin abrir ninguno.
@@ -37,11 +37,11 @@ El prefijo `ID_` no es decorativo: permite ordenar la carpeta alfabéticamente y
 | US-06 | `US-06_token-invalido-expirado.png` | Redirección a `/login` tras el 401. |
 | US-07 | `US-07_crear-operador.png` | Cuenta nueva en el listado de usuarios. |
 | US-08 | `US-08_no-crear-administrador.png` | Formulario sin selector de rol y cuenta creada como OPERADOR. |
-| US-09 | `US-09_documento-usuario-duplicado.png` | Mensaje de duplicado del backend. |
-| US-10 | `US-10_validaciones-cuenta-nueva.png` | Errores de validación del formulario. |
+| US-09 | `US-09_usuario-duplicado.png` | Mensaje «El documento o el nombre de usuario ya están registrados.» sobre el formulario. |
+| US-10 | `US-10_obligatorios-vacios.png`, `US-10_contrasena-corta.png` | Validación de obligatorios vacíos y rechazo de una contraseña de 7 caracteres. |
 | US-11 | `US-11_editar-operador.png` | Datos editados guardados en el listado. |
 | US-12 | `US-12_activar-desactivar-operador.png` | Cambio de estado reflejado y bloqueo sobre la cuenta administradora. |
-| US-13 | `US-13_restablecer-password.png` | Confirmación del restablecimiento. |
+| US-13 | `US-13_restablecer-contrasena.png` | Confirmación del restablecimiento. |
 | PE-01 | `PE-01_sin-token-401.png` | Salida de terminal con `401` y «Falta el token de sesión.» |
 | PE-02 | `PE-02_operador-no-gestiona-cuentas-403.png` | Salida de terminal con `403` al llamar `/usuarios` con token de operador. |
 | PE-03 | `PE-03_operador-no-cambia-estado-403.png` | Salida de terminal con `403` al cambiar estado de celda como operador. |
@@ -50,8 +50,8 @@ El prefijo `ID_` no es decorativo: permite ordenar la carpeta alfabéticamente y
 | CE-01 | `CE-01_listar-80-celdas.png` | Listado con las 80 celdas y su tipo. |
 | CE-02 | `CE-02_disponibilidad-cupo.png` | Cupo por tipo («Autos: N libres de 70»). |
 | CE-03 | `CE-03_disponibilidad-excluye-no-disponibles.png` | Celda ocupada o en mantenimiento ausente del cupo libre. |
-| CE-04 | `CE-04_celda-mantenimiento.png` | Celda en MANTENIMIENTO en la cuadrícula. |
-| CE-05 | `CE-05_habilitar-celda.png` | Celda de vuelta en DISPONIBLE. |
+| CE-04 | `CE-04_celda-mantenimiento.png` | Aviso «Celda A2 en mantenimiento.» con la tarjeta de la celda en MANTENIMIENTO. |
+| CE-05 | `CE-05_habilitar-celda.png` | Aviso «Celda A2 habilitada.» con la celda de vuelta en DISPONIBLE. |
 | CE-06 | `CE-06_no-desactivar-celda-ocupada-409.png` | Mensaje «La celda tiene una estancia abierta y no se puede desactivar.» |
 | CE-07 | `CE-07_entrada-celda-asignada.png` | Entrada registrada con la celda asignada por el servidor. |
 | CE-08 | `CE-08_entrada-ya-dentro-409.png` | Mensaje «Este vehículo ya figura dentro.» |
@@ -118,7 +118,7 @@ En la hoja `Casos`, columna **J — Evidencia: enlace o archivo**, cada fila lle
 evidencias/CE-07_entrada-celda-asignada.png
 ```
 
-Para los casos con dos capturas, se enlaza la carpeta del caso por prefijo o se listan las dos rutas separadas por coma. Y en la columna **K — Incidencia / bloqueo** se describe qué pasó cuando el resultado no coincide con el esperado; si no hubo incidencia, se deja vacía.
+Para los casos con dos capturas, se listan las dos rutas separadas por `; ` en la misma celda. Y en la columna **K — Incidencia / bloqueo** se describe qué pasó cuando el resultado no coincide con el esperado; si no hubo incidencia, se deja vacía.
 
 Las columnas **H a M** se llenan en el momento de la ejecución, no después: estado, resultado real, evidencia, incidencia, fecha y responsable.
 
