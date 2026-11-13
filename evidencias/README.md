@@ -2,7 +2,7 @@
 
 Carpeta de evidencias del plan de pruebas manuales de la entrega EA2.
 
-El requisito del curso es que las evidencias estén **hospedadas en un repositorio o carpeta accesible para la revisión**, y que la plantilla de pruebas lleve el **enlace** a cada una. Por eso la evidencia vive acá y el Excel solo la referencia.
+Como requisito para esta entrega, las evidencias estén **hospedadas en un repositorio o carpeta accesible para la revisión**, y la plantilla de pruebas lleve el **enlace** a cada una. Por eso la evidencia vive acá y el Excel solo la referencia.
 
 - Plan de pruebas: `Entregable 2/Plan_Pruebas_Usuarios_Celdas_Autos_Colombia.xlsx`
 - Documentación del sistema: `Entregable 2/Parkeo - Documentación del sistema - Iteración 2.docx`
@@ -21,7 +21,7 @@ Un archivo por caso, con esta forma:
 - `<ID>` es el identificador del caso en el Excel: `US-01`, `PE-01`, `CE-01`.
 - `<slug>` es un resumen corto en minúsculas con guiones, sin acentos ni espacios.
 - Si un caso necesita más de una captura, cada archivo lleva un slug distinto que describa su parte del caso: `US-10_obligatorios-vacios.png`, `US-10_contrasena-corta.png`.
-- Formato **PNG**. No usar JPEG: el texto de los mensajes de error se degrada y deja de ser legible.
+- Formato **PNG**. No se uso JPEG, dado que el texto de los mensajes de error se degrada y deja de ser legible.
 
 El prefijo `ID_` no es decorativo: permite ordenar la carpeta alfabéticamente y que cada archivo quede alineado con su fila del Excel sin abrir ninguno.
 
@@ -122,7 +122,7 @@ Para los casos con dos capturas, se listan las dos rutas separadas por `; ` en l
 
 Las columnas **H a M** se llenan en el momento de la ejecución, no después: estado, resultado real, evidencia, incidencia, fecha y responsable.
 
-## Antes de cerrar la entrega
+## En el cierre de esta entrega:
 
 - Los 33 casos tienen archivo de evidencia existente en esta carpeta.
 - Cada fila de la hoja `Casos` tiene las columnas H a M completas.
