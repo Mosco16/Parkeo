@@ -114,7 +114,7 @@ idempotente y suma pagos de ejemplo: ABC123 vigente y DEF456 por vencer a dos d�
 | T3 | Servicio de pagos (registro, anulación, historial) + pruebas | S5, S6, S7, S8, S9 | inline | hecho `6c017a4` |
 | T4 | Schemas y router `/pagos` + pruebas de API | S5, S9 | inline | hecho |
 | T5 | Ajuste de entrada y contrato de vehículos | S11, S12 | inline | hecho |
-| T6 | Correo con logo, job de avisos y registro | S10 | inline | pendiente |
+| T6 | Correo con logo, job de avisos y registro | S10 | inline | hecho |
 | T7 | Frontend: registrar pago, anular, historial | S12 | delegated | pendiente |
 | T8 | Frontend: integración en entrada y vehículos | S12 | delegated | pendiente |
 | T9 | Datos demo, documentación y evidencias | S14 | inline | pendiente |
@@ -154,3 +154,14 @@ derivada, la entrada se bloquea con la mensualidad vencida (pruebas nuevas sin
 base) y el formulario de vehículos pierde el campo manual de vencimiento y gana
 `correo`. Backend `266 passed, 26 skipped`; frontend `79 passed` y build
 correcto.
+
+**L8 (18/11/2026).** T6 completa: `app/services/correo.py` (interfaz
+`ServicioCorreo`, `SmtpCorreo` con STARTTLS/SSL, mensaje HTML+texto plano y logo
+por CID a 200 px), `app/services/aviso.py` (job idempotente con dedupe por
+`uq_aviso_enviado`, registro ENVIADO/FALLIDO y tolerancia a la carrera del
+índice) y `scripts/enviar_avisos.py` (`--fecha`, `--dry-run`). `tests/test_avisos.py`
+cubre el MIME y el job con dobles, sin SMTP ni base. `.env.example` documenta
+`SMTP_HOST/PORT/TLS/USUARIO/PASSWORD/REMITENTE/NOMBRE` sin credenciales.
+Backend `277 passed, 26 skipped` y `pip check` limpio. El envío real sigue
+pendiente: `backend/.env` no tiene las variables SMTP y la contraseña de
+aplicación no está disponible.
