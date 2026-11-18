@@ -109,10 +109,10 @@ idempotente y suma pagos de ejemplo: ABC123 vigente y DEF456 por vencer a dos d�
 
 | ID | Tarea | Specs | Ruta | Estado |
 |---|---|---|---|---|
-| T1 | Migraciones `0008` y `0009` + modelos + `Configuración SMTP` | S1 | inline | pendiente |
-| T2 | Módulo de ciclo y vigencia + pruebas unitarias | S2, S3, S4 | inline | pendiente |
-| T3 | Servicio de pagos (registro, anulación, historial) + pruebas | S5, S6, S7, S8, S9 | inline | pendiente |
-| T4 | Schemas y router `/pagos` + pruebas de API | S5, S9 | inline | pendiente |
+| T1 | Migraciones `0008` y `0009` + modelos + `Configuración SMTP` | S1 | inline | hecho `a47afaf` |
+| T2 | Módulo de ciclo y vigencia + pruebas unitarias | S2, S3, S4 | inline | hecho `855fc8b` |
+| T3 | Servicio de pagos (registro, anulación, historial) + pruebas | S5, S6, S7, S8, S9 | inline | hecho `6c017a4` |
+| T4 | Schemas y router `/pagos` + pruebas de API | S5, S9 | inline | hecho |
 | T5 | Ajuste de entrada y contrato de vehículos | S11, S12 | inline | pendiente |
 | T6 | Correo con logo, job de avisos y registro | S10 | inline | pendiente |
 | T7 | Frontend: registrar pago, anular, historial | S12 | delegated | pendiente |
@@ -137,3 +137,14 @@ aplicación, cargada solo en `backend/.env` (ignorado por git). Logo del correo:
 **L4 (18/11/2026).** Baseline verde antes de empezar: backend `205 passed,
 26 skipped`; frontend `79 passed` y build correcto. Rama `iteracion-3-pagos`
 creada desde `6974b55`.
+
+**L5 (18/11/2026).** T1–T4 completas: `a47afaf` (modelos y migraciones),
+`855fc8b` (ciclo y vigencia), `6c017a4` (servicio de pagos) y T4 (router y
+pruebas de API). Backend en `258 passed, 26 skipped`.
+
+**L6 (18/11/2026).** PostgreSQL no está instalado en esta máquina: no hay
+servicio, binarios ni puerto 5432 escuchando. `alembic upgrade head` y
+`check_db.py` fallan por conexión, así que `0008`/`0009` quedan sin aplicar y las
+26 pruebas de integración siguen saltadas. Las migraciones se validaron en modo
+SQL offline (`0007:0008` y `0008:0009`). Para validar en PostgreSQL real se
+necesita la base en otra máquina o instalar PostgreSQL localmente.

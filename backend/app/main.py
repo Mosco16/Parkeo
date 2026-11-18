@@ -11,6 +11,8 @@ from app.routers.usuarios import router as usuarios_router
 from app.services.usuario import UsuarioError
 from app.routers.estancias import router as estancias_router
 from app.services.estancia import EstanciaError
+from app.routers.pagos import router as pagos_router
+from app.services.pago import PagoError
 
 app = FastAPI(title="Parkeo API")
 app.include_router(auth_router)
@@ -18,6 +20,7 @@ app.include_router(vehiculos_router)
 app.include_router(celdas_router)
 app.include_router(usuarios_router)
 app.include_router(estancias_router)
+app.include_router(pagos_router)
 
 
 @app.exception_handler(AuthError)
@@ -32,7 +35,8 @@ async def auth_error_handler(request, error: AuthError) -> JSONResponse:
 @app.exception_handler(CeldaError)
 @app.exception_handler(UsuarioError)
 @app.exception_handler(EstanciaError)
-async def entity_error_handler(request, error: VehiculoError | CeldaError | UsuarioError | EstanciaError) -> JSONResponse:
+@app.exception_handler(PagoError)
+async def entity_error_handler(request, error: VehiculoError | CeldaError | UsuarioError | EstanciaError | PagoError) -> JSONResponse:
     return JSONResponse(status_code=error.status_code, content={"detail": error.detail})
 
 
