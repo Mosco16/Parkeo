@@ -26,7 +26,6 @@ conectada no se llama igual que ``DB_NAME`` en ``backend/.env``.
 from __future__ import annotations
 
 import sys
-import calendar
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -40,7 +39,7 @@ from app.config import load_database_settings  # noqa: E402
 from app.database import get_engine  # noqa: E402
 from app.models import Celda, Pago, Usuario, Vehiculo  # noqa: E402
 from app.security import hash_password  # noqa: E402
-from app.services.estancia import hoy_bogota  # noqa: E402
+from app.services.ciclo import hoy_bogota, mes_anterior_anclado  # noqa: E402
 
 BANNER = "DATOS DE DEMOSTRACIÓN"
 PASSWORD_DEMO = "Parkeo2026*"
@@ -89,10 +88,7 @@ def vehiculos(hoy: date) -> list[tuple[str, str, str, str, int, str, date]]:
 
 def _mes_anterior(fecha: date, dia: int) -> date:
     """Inicio del ciclo que termina en ``fecha``, anclado al día de corte."""
-    anio = fecha.year if fecha.month > 1 else fecha.year - 1
-    mes = fecha.month - 1 if fecha.month > 1 else 12
-    ultimo = calendar.monthrange(anio, mes)[1]
-    return date(anio, mes, min(dia, ultimo))
+    return mes_anterior_anclado(fecha, dia)
 
 
 def verificar_base(session: Session, nombre_configurado: str) -> str:

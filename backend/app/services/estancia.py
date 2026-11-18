@@ -1,12 +1,10 @@
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from functools import wraps
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, aliased
 
-from app.config import ZONA_HORARIA
 from app.models import CambioCelda, Celda, Estancia, Usuario, Vehiculo, required_text
 from app.schemas.celda import CeldaRespuesta
 from app.schemas.estancia import (
@@ -18,6 +16,7 @@ from app.schemas.estancia import (
     SalidaCrear,
 )
 from app.schemas.vehiculo import VehiculoRespuesta
+from app.services.ciclo import estado_mensualidad, hoy_bogota
 
 
 class EstanciaError(Exception):
@@ -63,17 +62,10 @@ def transaccion(operation):
     return wrapped
 
 
-def hoy_bogota() -> date:
-    return datetime.now(ZoneInfo(ZONA_HORARIA)).date()
-
-
 def mensualidad(vehiculo: Vehiculo) -> str:
     # RN-VIG-03 y RN-VIG-05: VIGENTE solo si hoy es anterior al vencimiento
     # derivado. Si vence hoy, o el vehículo no tiene pagos, ya es VENCIDA.
-    vencimiento = vehiculo.fecha_vencimiento
-    if vencimiento is not None and hoy_bogota() < vencimiento:
-        return "VIGENTE"
-    return "VENCIDA"
+    return estado_mensualidad(vehiculo.fecha_vencimiento, hoy_bogota())
 
 
 def tipo_celda_requerido(vehiculo: Vehiculo) -> str:
