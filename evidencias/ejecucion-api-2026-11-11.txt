@@ -1,0 +1,60 @@
+REGISTRO DE EJECUCION - Casos del plan de pruebas de Parkeo
+Fecha: 11 de noviembre de 2026
+Entorno: backend local en http://127.0.0.1:8000 contra la base autos_colombia (0007 head)
+Medio: solicitudes HTTP reales con las cuentas de demostracion.
+Alcance: comportamiento del backend (codigos de estado y mensajes exactos).
+No cubre: observacion de las pantallas en navegador, que se documenta aparte con capturas.
+Las contrasenas y los tokens no se incluyen en este registro.
+
+EJECUCION DE CASOS - http://127.0.0.1:8000
+Comprobaciones: 49 | correctas: 49 | no coinciden: 0
+Estancias abiertas al cerrar: 0 | cambios de celda: 4 | cuenta de prueba id: 178
+
+[OK ] US-01                        200 | rol=ADMINISTRADOR | usuario=admin
+[OK ] US-01b                       200 | rol=ADMINISTRADOR
+[OK ] US-02                        200 | rol=OPERADOR
+[OK ] US-03                        401 | Usuario o contraseña incorrectos.
+[OK ] US-03b                       401 | Usuario o contraseña incorrectos.
+[OK ] US-04                        422 | body, usuario: Field required
+[OK ] US-04b                       422 | body, usuario: Value error, El campo debe ser texto no vacío.
+[OK ] US-07                        201 | rol=OPERADOR | usuario=operador.nuevo
+[OK ] US-08                        422 | body, rol: Extra inputs are not permitted
+[OK ] US-09                        409 | Ya existe una cuenta con ese documento.
+[OK ] US-09b                       409 | Ese nombre de usuario ya está en uso.
+[OK ] US-10                        422 | body, password: Value should have at least 8 items after validation, not 7
+[OK ] US-10b                       422 | body, nombre: Value error, El campo debe ser texto no vacío.
+[OK ] US-11                        200 | nombre=Operador Nuevo Editado | telefono=3009998877
+[OK ] US-12                        200 | activo=False
+[OK ] US-05                        403 | La cuenta está inactiva. Contacta al administrador.
+[OK ] US-12b                       403 | No se puede cambiar el estado de una cuenta administradora.
+[OK ] US-13                        200
+[OK ] US-13b                       200
+[OK ] US-06                        401 | Falta el token de sesión.
+[OK ] US-06b                       401 | El token de sesión no es válido o expiró.
+[OK ] US-06c                       401 | El token de sesión no es válido o expiró.
+[OK ] PE-01 /celdas                401 | Falta el token de sesión.
+[OK ] PE-01 /celdas/disponibilidad 401 | Falta el token de sesión.
+[OK ] PE-01 /usuarios              401 | Falta el token de sesión.
+[OK ] PE-01 /estancias/vehiculo/ABC123 401 | Falta el token de sesión.
+[OK ] PE-02                        403 | Esta acción requiere una cuenta administradora.
+[OK ] PE-03                        403 | Esta acción requiere una cuenta administradora.
+[OK ] PE-04                        201 | celda=A1
+[OK ] CE-01                        200 | total=80 AUTO=70 MOTO=10
+[OK ] CE-02                        200 | AUTO={'total': 70, 'libres': 69} MOTO={'total': 10, 'libres': 10}
+[OK ] CE-03                        AUTO libres=69 (total 70); M10 estado=MANTENIMIENTO; MOTO libres=9
+[OK ] CE-04                        200 | activa=False
+[OK ] CE-05                        200 | activa=True
+[OK ] CE-06                        409 | La celda tiene una estancia abierta y no se puede desactivar.
+[OK ] CE-07                        201 | celda=A1 | salida=None
+[OK ] CE-08                        409 | Este vehículo ya figura dentro.
+[OK ] CE-09                        409 | Pago pendiente: la mensualidad está vencida.
+[OK ] CE-09b                       409 | Pago pendiente: la mensualidad está vencida.
+[OK ] CE-10                        409 | No hay celdas libres para este tipo de vehículo.
+[OK ] CE-11                        200 | salida=2026-11-11T17:49:23 | A1=DISPONIBLE
+[OK ] CE-12                        409 | El vehículo no tiene una entrada abierta.
+[OK ] CE-12b                       404 | Vehículo no encontrado.
+[OK ] CE-13                        200 | de A1 a A2 | id estancia=295
+[OK ] CE-14                        409 | La celda de destino debe ser distinta a la actual.
+[OK ] CE-14b                       409 | La celda no está disponible o es de otro tipo.
+[OK ] CE-14c                       404 | Celda no encontrada.
+[OK ] CE-15                        200 | total=4 | primero={"id": 6, "fecha_hora": "2026-11-11T17:49:23.325777Z", "placa": "ABC123", "celda_anterior": "A4", "celda_nueva": "A5", "usuario": "Ana Gómez"}

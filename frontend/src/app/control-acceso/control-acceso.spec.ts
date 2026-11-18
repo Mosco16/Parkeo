@@ -1,9 +1,8 @@
-﻿import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { ControlAcceso } from './control-acceso';
-import { SesionOperador } from '../services/sesion-operador.service';
 
 describe('Registrar entrada', () => {
   let http: HttpTestingController;
@@ -34,8 +33,8 @@ describe('Registrar entrada', () => {
       celda_id: 2,
       entrada: '2026-10-19T15:00:00Z',
       salida: null,
-      operador_entrada_id: 4,
-      operador_salida_id: null,
+      usuario_entrada_id: 4,
+      usuario_salida_id: null,
       celda,
     },
     celda_sugerida: null,
@@ -47,7 +46,6 @@ describe('Registrar entrada', () => {
       imports: [ControlAcceso],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
-    TestBed.inject(SesionOperador).iniciar({ id: 4, nombre: 'Ana', telefono: '001' });
     http = TestBed.inject(HttpTestingController);
     c = TestBed.createComponent(ControlAcceso).componentInstance;
   });
@@ -68,7 +66,7 @@ describe('Registrar entrada', () => {
     c.confirmarEntrada();
     c.confirmarEntrada();
     const req = http.expectOne('/estancias/entrada');
-    expect(req.request.body).toEqual({ placa: 'ABC123', operador_id: 4 });
+    expect(req.request.body).toEqual({ placa: 'ABC123' });
     req.flush({ ...dentro.estancia, celda });
     expect(c.exitoEntrada()).toContain('ABC123');
     expect(c.exitoEntrada()).toContain('A1');
@@ -129,17 +127,17 @@ describe('Registrar entrada', () => {
     c.corregirEntrada();
     expect(c.confirmando()).toBe(false);
     const salida = http.expectOne('/estancias/salida');
-    expect(salida.request.body).toEqual({ placa: 'ABC123', operador_id: 4 });
+    expect(salida.request.body).toEqual({ placa: 'ABC123' });
     salida.flush({
       ...dentro.estancia,
       salida: '2026-10-19T22:00:00Z',
-      operador_salida_id: 4,
+      usuario_salida_id: 4,
     });
     expect(c.aviso()).toBe('Estancia cerrada.');
 
     http.expectOne('/estancias/vehiculo/ABC123').flush(fuera);
     const entrada = http.expectOne('/estancias/entrada');
-    expect(entrada.request.body).toEqual({ placa: 'ABC123', operador_id: 4 });
+    expect(entrada.request.body).toEqual({ placa: 'ABC123' });
     entrada.flush({ ...dentro.estancia, id: 9, celda });
     expect(c.exitoEntrada()).toContain('Estancia cerrada.');
     expect(c.exitoEntrada()).toContain('Entrada registrada');
@@ -153,7 +151,7 @@ describe('Registrar entrada', () => {
     http.expectOne('/estancias/salida').flush({
       ...dentro.estancia,
       salida: '2026-10-19T22:00:00Z',
-      operador_salida_id: 4,
+      usuario_salida_id: 4,
     });
     http.expectOne('/estancias/vehiculo/ABC123').flush(fuera);
     http.expectOne('/estancias/entrada').error(new ProgressEvent('error'));
@@ -178,8 +176,8 @@ describe('Registrar entrada desde la salida', () => {
     celda_id: 2,
     entrada: '2026-10-19T15:00:00Z',
     salida: null,
-    operador_entrada_id: 4,
-    operador_salida_id: null,
+    usuario_entrada_id: 4,
+    usuario_salida_id: null,
     celda,
   };
 
@@ -201,7 +199,6 @@ describe('Registrar entrada desde la salida', () => {
         },
       ],
     });
-    TestBed.inject(SesionOperador).iniciar({ id: 4, nombre: 'Ana', telefono: '001' });
     http = TestBed.inject(HttpTestingController);
   });
 

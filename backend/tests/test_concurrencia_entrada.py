@@ -15,8 +15,11 @@ from sqlalchemy import delete, event, func, select, text
 from sqlalchemy.orm import Session
 
 from app.database import get_engine
+from app.dependencies import usuario_actual
 from app.main import app
-from app.models import Celda, Estancia, Operador, Vehiculo
+from app.models import Celda, Estancia, Pago, Usuario, Vehiculo
+
+from conftest import con_pago, usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -28,42 +31,53 @@ def datos():
     engine = get_engine()
     with engine.connect() as c:
         assert c.scalar(text('SELECT current_database()')) == 'autos_colombia'
-        assert c.scalar(text('SELECT version_num FROM alembic_version')) in {'0003', '0004'}
+        assert int(c.scalar(text('SELECT version_num FROM alembic_version'))) >= 5
 
     token = 'TEST-CONC-' + uuid4().hex.upper()
     vigente = date.today() + timedelta(days=30)
     with Session(engine) as s, s.begin():
-        operador = Operador(nombre=f'{token}-OP', telefono='001')
+        usuario = Usuario(
+            documento=f'{token}-OP', nombre=f'{token}-OP', telefono='001',
+            usuario=f'{token}-OP'.lower(), password_hash='hash-de-prueba', rol='OPERADOR',
+        )
         celdas = [Celda(codigo=f'{token}-A{n}', tipo='AUTO') for n in (1, 2)]
         vehiculos = [
             Vehiculo(placa=f'{token}-{n}', color='Azul', modelo=2026, marca='Prueba',
-                     tipo='AUTOMOVIL', fecha_vencimiento=vigente)
+                     tipo='AUTOMOVIL')
             for n in (1, 2)
         ]
-        s.add(operador)
+        s.add(usuario)
         s.add_all(celdas)
         s.add_all(vehiculos)
+        s.flush()
+        for vehiculo in vehiculos:
+            con_pago(vehiculo, vigente, usuario_id=usuario.id)
         s.flush()
         data = {
             'celdas': [c.id for c in celdas],
             'vehiculos': [v.id for v in vehiculos],
             'placas': [v.placa for v in vehiculos],
-            'operador': operador.id,
-            'extras': {'vehiculos': [], 'operadores': []},
+            'usuario': usuario.id,
+            'extras': {'vehiculos': [], 'usuarios': []},
         }
 
     aislar(data, token)
 
+    app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+        id=data['usuario'], rol='OPERADOR'
+    )
     try:
         yield data
     finally:
+        app.dependency_overrides.pop(usuario_actual, None)
         todos = data['vehiculos'] + data['extras']['vehiculos']
         with Session(engine) as s, s.begin():
+            s.execute(delete(Pago).where(Pago.vehiculo_id.in_(todos)))
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(todos)))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(todos)))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
-            s.execute(delete(Operador).where(
-                Operador.id.in_([data['operador']] + data['extras']['operadores'])
+            s.execute(delete(Usuario).where(
+                Usuario.id.in_([data['usuario']] + data['extras']['usuarios'])
             ))
         with Session(engine) as s:
             assert s.scalar(
@@ -83,21 +97,26 @@ def aislar(d, token):
                 Celda.id.not_in(ocupadas),
             )
         ))
-        operador = Operador(nombre=f'{token}-OCUP', telefono=None)
-        s.add(operador)
+        usuario = Usuario(
+            documento=f'{token}-OCUP', nombre=f'{token}-OCUP', telefono=None,
+            usuario=f'{token}-OCUP'.lower(), password_hash='hash-de-prueba', rol='OPERADOR',
+        )
+        s.add(usuario)
         s.flush()
-        d['extras']['operadores'].append(operador.id)
+        d['extras']['usuarios'].append(usuario.id)
         for numero, celda in enumerate(otras):
             vehiculo = Vehiculo(
                 placa=f'{token}-OCUP-{numero}', color='X', modelo=2020, marca='X',
-                tipo='AUTOMOVIL', fecha_vencimiento=date(2030, 1, 1),
+                tipo='AUTOMOVIL',
             )
             s.add(vehiculo)
+            s.flush()
+            con_pago(vehiculo, date(2030, 1, 1), usuario_id=usuario.id)
             s.flush()
             d['extras']['vehiculos'].append(vehiculo.id)
             s.add(Estancia(
                 vehiculo_id=vehiculo.id, celda_id=celda.id,
-                operador_entrada_id=operador.id, entrada=datetime.now(timezone.utc),
+                usuario_entrada_id=usuario.id, entrada=datetime.now(timezone.utc),
             ))
 
 
@@ -124,7 +143,7 @@ def test_e15_dos_entradas_simultaneas_toman_celdas_distintas(datos):
     def entrar(placa):
         with TestClient(app) as client:
             respuesta = client.post(
-                '/estancias/entrada', json={'placa': placa, 'operador_id': d['operador']}
+                '/estancias/entrada', json={'placa': placa}
             )
             return respuesta.status_code, respuesta.json()
 

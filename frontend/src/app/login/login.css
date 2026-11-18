@@ -1,0 +1,106 @@
+.login-page {
+  min-height: calc(100vh - 170px);
+  display: grid;
+  place-items: center;
+  padding: 40px 18px;
+}
+.login-card {
+  width: min(440px, 100%);
+  padding: 36px;
+  border: 1px solid #dbe3ee;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(14, 42, 71, 0.12);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.brand img {
+  border-radius: 16px;
+  object-fit: cover;
+}
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b6b7f;
+}
+h1 {
+  margin: 0;
+  font-size: 32px;
+  color: #0e2a47;
+}
+.subtitle {
+  margin: 2px 0 0;
+  color: #5b6b7f;
+  font-size: 14px;
+}
+form {
+  display: grid;
+  gap: 8px;
+}
+label {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #0e2a47;
+}
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #c9d4e2;
+  border-radius: 10px;
+  font: inherit;
+  color: #12263d;
+  background: #fbfcfe;
+}
+input:focus {
+  outline: 3px solid rgba(245, 194, 66, 0.55);
+  border-color: #0e2a47;
+}
+input[aria-invalid='true'] {
+  border-color: #b3261e;
+}
+button {
+  margin-top: 14px;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #0e2a47;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: #163c63;
+}
+button:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+.field-error,
+.form-error {
+  margin: 0;
+  font-size: 13px;
+}
+.field-error {
+  color: #b3261e;
+}
+.form-error {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fdecea;
+  color: #8c1d18;
+}
+.help {
+  margin: 24px 0 0;
+  font-size: 12px;
+  color: #5b6b7f;
+  text-align: center;
+}

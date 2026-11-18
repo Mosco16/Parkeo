@@ -1,14 +1,14 @@
 <section class="management" aria-labelledby="entry-title">
   <header class="heading">
     <div>
-      <span class="eyebrow">AUTOS COLOMBIA</span>
+      <span class="eyebrow">PARKEO · OPERACIÓN</span>
       <h1 id="entry-title">Registrar entrada</h1>
       <p>Consulta la placa y confirma la celda que asigna el sistema.</p>
     </div>
   </header>
 
-  @if (operador(); as activo) {
-    <p class="operator-line">Operador en turno: <strong>{{ activo.nombre }}</strong></p>
+  @if (usuario(); as activo) {
+    <p class="operator-line">Usuario en sesión: <strong>{{ activo.nombre }}</strong></p>
   }
 
   <section class="panel" aria-label="Consulta de placa">
@@ -97,7 +97,7 @@
             </div>
           </div>
         } @else {
-          <button type="button" (click)="abrirConfirmacion()" [disabled]="busy() || !operador()">
+          <button type="button" (click)="abrirConfirmacion()" [disabled]="busy()">
             Cerrar estancia anterior y registrar entrada de nuevo
           </button>
         }
@@ -106,6 +106,12 @@
           Pago pendiente: la mensualidad está vencida.
           <span>Vence {{ vence(state.vehiculo.fecha_vencimiento) }}.</span>
         </p>
+        <a
+          class="primary-link"
+          routerLink="/pagos"
+          [queryParams]="{ placa: state.vehiculo.placa }"
+          >Registrar pago de esta placa</a
+        >
       } @else if (!state.celda_sugerida) {
         <p class="notice error" role="alert">No hay celdas libres para este tipo de vehículo.</p>
       } @else {
@@ -120,7 +126,7 @@
           type="button"
           class="primary"
           (click)="confirmarEntrada()"
-          [disabled]="busy() || !operador()"
+          [disabled]="busy()"
         >
           Confirmar entrada
         </button>

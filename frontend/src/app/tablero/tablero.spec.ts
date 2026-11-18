@@ -7,9 +7,9 @@ describe('Tablero', () => {
   let fixture: ComponentFixture<Tablero>;
   let http: HttpTestingController;
   const celdas = [
-    { id: 1, codigo: 'A1', tipo: 'AUTO', estado: 'LIBRE' },
-    { id: 2, codigo: 'A2', tipo: 'AUTO', estado: 'OCUPADA' },
-    { id: 3, codigo: 'M1', tipo: 'MOTO', estado: 'LIBRE' },
+    { id: 1, codigo: 'A1', tipo: 'AUTO', activa: true, estado: 'DISPONIBLE', placa: null },
+    { id: 2, codigo: 'A2', tipo: 'AUTO', activa: true, estado: 'OCUPADA', placa: 'ABC123' },
+    { id: 3, codigo: 'M1', tipo: 'MOTO', activa: false, estado: 'MANTENIMIENTO', placa: null },
   ];
   const cupo = {
     AUTO: { total: 70, libres: 69 },
@@ -48,6 +48,8 @@ describe('Tablero', () => {
     expect(root.querySelectorAll('.cell').length).toBe(3);
     expect(root.querySelectorAll('.cell.taken').length).toBe(1);
     expect(root.querySelector('.cell.taken')?.textContent).toContain('Ocupada');
+    expect(root.querySelector('.cell.taken')?.textContent).toContain('ABC123');
+    expect(root.querySelectorAll('.cell.maintenance').length).toBe(1);
     expect(root.textContent).toContain('Autos: 69 libres de 70');
     expect(root.textContent).toContain('Motos: 10 libres de 10');
   });

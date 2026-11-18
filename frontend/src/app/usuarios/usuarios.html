@@ -1,0 +1,274 @@
+<section class="management" aria-labelledby="users-title">
+  <header class="heading">
+    <div>
+      <span class="eyebrow">GESTIÓN DE USUARIOS</span>
+      <h1 id="users-title">Usuarios</h1>
+      <p>Administra las cuentas de operador del parqueadero.</p>
+    </div>
+    <button class="primary" type="button" (click)="nuevo()" [disabled]="busy()">
+      Nuevo operador
+    </button>
+  </header>
+
+  @if (success()) {
+    <p class="notice success" role="status">{{ success() }}</p>
+  }
+  @if (actionError()) {
+    <p class="notice error" role="alert">{{ actionError() }}</p>
+  }
+
+  @if (showForm()) {
+    <section class="panel" aria-labelledby="form-title">
+      <h2 id="form-title">
+        {{ editing() === null ? 'Registrar operador' : 'Editar operador' }}
+      </h2>
+      <p class="hint">
+        Documento, nombre y usuario son obligatorios. Teléfono, correo y dirección son opcionales.
+        @if (editing() === null) {
+          La contraseña inicial debe tener al menos 8 caracteres.
+        } @else {
+          Deja un campo opcional vacío para conservar su valor.
+        }
+      </p>
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <fieldset [disabled]="busy()">
+          <legend class="sr-only">Datos del usuario</legend>
+          <div class="form-grid">
+            <div class="field">
+              <label for="documento">Documento</label>
+              <input
+                id="documento"
+                type="text"
+                formControlName="documento"
+                autocomplete="off"
+                required
+                [attr.aria-invalid]="!!fieldError('documento')"
+                aria-describedby="documento-error"
+              />
+              <span class="field-error" id="documento-error">{{ fieldError('documento') }}</span>
+            </div>
+            <div class="field">
+              <label for="nombre">Nombre</label>
+              <input
+                id="nombre"
+                type="text"
+                formControlName="nombre"
+                autocomplete="off"
+                required
+                [attr.aria-invalid]="!!fieldError('nombre')"
+                aria-describedby="nombre-error"
+              />
+              <span class="field-error" id="nombre-error">{{ fieldError('nombre') }}</span>
+            </div>
+            <div class="field">
+              <label for="usuario">Usuario</label>
+              <input
+                id="usuario"
+                type="text"
+                formControlName="usuario"
+                autocomplete="off"
+                required
+                [attr.aria-invalid]="!!fieldError('usuario')"
+                aria-describedby="usuario-error"
+              />
+              <span class="field-error" id="usuario-error">{{ fieldError('usuario') }}</span>
+            </div>
+            <div class="field">
+              <label for="telefono">Teléfono (opcional)</label>
+              <input
+                id="telefono"
+                type="tel"
+                formControlName="telefono"
+                autocomplete="off"
+                [attr.aria-invalid]="!!fieldError('telefono')"
+                aria-describedby="telefono-error"
+              />
+              <span class="field-error" id="telefono-error">{{ fieldError('telefono') }}</span>
+            </div>
+            <div class="field">
+              <label for="correo">Correo (opcional)</label>
+              <input
+                id="correo"
+                type="email"
+                formControlName="correo"
+                autocomplete="off"
+                [attr.aria-invalid]="!!fieldError('correo')"
+                aria-describedby="correo-error"
+              />
+              <span class="field-error" id="correo-error">{{ fieldError('correo') }}</span>
+            </div>
+            <div class="field">
+              <label for="direccion">Dirección (opcional)</label>
+              <input
+                id="direccion"
+                type="text"
+                formControlName="direccion"
+                autocomplete="off"
+                [attr.aria-invalid]="!!fieldError('direccion')"
+                aria-describedby="direccion-error"
+              />
+              <span class="field-error" id="direccion-error">{{ fieldError('direccion') }}</span>
+            </div>
+            @if (editing() === null) {
+              <div class="field">
+                <label for="password">Contraseña inicial</label>
+                <input
+                  id="password"
+                  type="password"
+                  formControlName="password"
+                  autocomplete="new-password"
+                  required
+                  [attr.aria-invalid]="!!fieldError('password')"
+                  aria-describedby="password-error"
+                />
+                <span class="field-error" id="password-error">{{ fieldError('password') }}</span>
+              </div>
+            }
+          </div>
+          <div class="actions">
+            <button type="submit" class="primary">
+              {{ saving() ? 'Guardando…' : 'Guardar usuario' }}
+            </button>
+            <button type="button" (click)="cancelar()">Cancelar</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+  }
+
+  @if (resetTarget(); as usuario) {
+    <section class="panel" aria-labelledby="reset-title">
+      <h2 id="reset-title">Restablecer contraseña de {{ usuario.usuario }}</h2>
+      <p class="hint">
+        La nueva contraseña debe tener al menos 8 caracteres. La anterior dejará de funcionar.
+      </p>
+      <form [formGroup]="resetForm" (ngSubmit)="resetPassword()" novalidate>
+        <fieldset [disabled]="busy()">
+          <legend class="sr-only">Nueva contraseña</legend>
+          <div class="form-grid">
+            <div class="field">
+              <label for="nueva-password">Nueva contraseña</label>
+              <input
+                id="nueva-password"
+                type="password"
+                formControlName="password"
+                autocomplete="new-password"
+                required
+                [attr.aria-invalid]="!!resetForm.controls.password.touched && !!resetForm.controls.password.errors"
+                aria-describedby="nueva-password-error"
+              />
+              <span class="field-error" id="nueva-password-error">
+                @if (resetForm.controls.password.touched && resetForm.controls.password.errors) {
+                  La contraseña debe tener al menos 8 caracteres.
+                }
+              </span>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="primary">
+              {{ saving() ? 'Guardando…' : 'Restablecer contraseña' }}
+            </button>
+            <button type="button" (click)="cancelarReset()">Cancelar</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+  }
+
+  <section class="panel list" aria-label="Listado de usuarios" [attr.aria-busy]="loading()">
+    <div class="list-heading">
+      <h2>
+        Usuarios registrados <span class="count">{{ total() }}</span>
+      </h2>
+      <button type="button" (click)="load()" [disabled]="busy()">Actualizar listado</button>
+    </div>
+    @if (loading()) {
+      <p class="empty" role="status">Cargando usuarios…</p>
+    } @else if (listError()) {
+      <p class="notice error" role="alert">{{ listError() }}</p>
+    } @else if (!items().length) {
+      <div class="empty">
+        <h3>Aún no hay usuarios</h3>
+        <p>Registra un operador para comenzar.</p>
+      </div>
+    } @else {
+      <div class="table-scroll">
+        <table>
+          <caption class="sr-only">
+            Usuarios registrados
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Documento</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Usuario</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (usuario of items(); track usuario.id) {
+              <tr>
+                <td>{{ usuario.documento }}</td>
+                <th scope="row">{{ usuario.nombre }}</th>
+                <td>{{ usuario.usuario }}</td>
+                <td>{{ usuario.telefono ?? '—' }}</td>
+                <td>
+                  <span class="badge" [class.inactivo]="!usuario.activo">
+                    {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="row-actions">
+                  <button
+                    type="button"
+                    (click)="editar(usuario)"
+                    [disabled]="busy()"
+                    [attr.aria-label]="'Editar ' + usuario.nombre"
+                  >
+                    Editar</button
+                  ><button
+                    type="button"
+                    (click)="pedirReset(usuario)"
+                    [disabled]="busy()"
+                    [attr.aria-label]="'Restablecer contraseña de ' + usuario.nombre"
+                  >
+                    Restablecer</button
+                  ><button
+                    type="button"
+                    [class.delete-link]="usuario.activo"
+                    (click)="cambiarEstado(usuario)"
+                    [disabled]="busy()"
+                    [attr.aria-label]="
+                      (usuario.activo ? 'Desactivar ' : 'Activar ') + usuario.nombre
+                    "
+                  >
+                    {{ usuario.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <nav class="pagination" aria-label="Paginación de usuarios">
+      <span>Página {{ page() }} de {{ pages() }} · {{ limit }} por página</span>
+      <div class="actions">
+        <button
+          type="button"
+          (click)="load(offset() - limit)"
+          [disabled]="busy() || offset() === 0"
+        >
+          Anterior</button
+        ><button
+          type="button"
+          (click)="load(offset() + limit)"
+          [disabled]="busy() || offset() + limit >= total()"
+        >
+          Siguiente
+        </button>
+      </div>
+    </nav>
+  </section>
+</section>

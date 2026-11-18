@@ -10,17 +10,15 @@ Identificador = Annotated[int, Field(strict=True, ge=1, le=9223372036854775807)]
 
 
 class EntradaCrear(BaseModel):
-    """RN-ENT-05: el operador no escoge la celda; la asigna el servicio."""
+    """RN-ENT-05: el usuario no escoge la celda; la asigna el servicio."""
 
     model_config = ConfigDict(extra="forbid")
     placa: Placa
-    operador_id: Identificador
 
 
 class SalidaCrear(BaseModel):
     model_config = ConfigDict(extra="forbid")
     placa: Placa
-    operador_id: Identificador
 
 
 class CambioCeldaCrear(BaseModel):
@@ -36,8 +34,8 @@ class EstanciaRespuesta(BaseModel):
     celda_id: int
     entrada: datetime
     salida: datetime | None
-    operador_entrada_id: int
-    operador_salida_id: int | None
+    usuario_entrada_id: int
+    usuario_salida_id: int | None
 
     @field_validator("entrada", "salida")
     @classmethod
@@ -55,3 +53,27 @@ class EstadoVehiculoRespuesta(BaseModel):
     estancia: EstanciaAbiertaRespuesta | None
     mensualidad: Literal["VIGENTE", "VENCIDA"]
     celda_sugerida: CeldaRespuesta | None = None
+
+
+class CambioCeldaHistorial(BaseModel):
+    """S6: una fila del historial con placa, códigos y nombre del usuario."""
+
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    fecha_hora: datetime
+    placa: str
+    celda_anterior: str
+    celda_nueva: str
+    usuario: str
+
+    @field_validator("fecha_hora")
+    @classmethod
+    def fecha_utc(cls, value: datetime) -> datetime:
+        return value.astimezone(timezone.utc)
+
+
+class HistorialCambiosPagina(BaseModel):
+    items: list[CambioCeldaHistorial]
+    total: int
+    offset: int
+    limit: int

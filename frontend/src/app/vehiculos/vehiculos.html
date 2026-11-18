@@ -3,7 +3,7 @@
     <div>
       <span class="eyebrow">GESTIÓN VEHICULAR</span>
       <h1 id="vehicles-title">Vehículos</h1>
-      <p>Consulta y administra los vehículos de Autos Colombia.</p>
+      <p>Consulta y administra los vehículos registrados en Parkeo.</p>
     </div>
     <button type="button" class="primary" (click)="newVehicle()" [disabled]="busy()">
       Nuevo vehículo
@@ -72,18 +72,16 @@
               <span class="field-error" id="tipo-error">{{ fieldError('tipo') }}</span>
             </div>
             <div class="field">
-              <label for="fecha_vencimiento">Vence la mensualidad</label>
+              <label for="correo">Correo para avisos (opcional)</label>
               <input
-                id="fecha_vencimiento"
-                type="date"
-                formControlName="fecha_vencimiento"
-                [attr.aria-invalid]="!!fieldError('fecha_vencimiento')"
-                aria-describedby="fecha_vencimiento-error"
-                required
+                id="correo"
+                type="email"
+                formControlName="correo"
+                [attr.aria-invalid]="!!fieldError('correo')"
+                aria-describedby="correo-error"
+                autocomplete="off"
               />
-              <span class="field-error" id="fecha_vencimiento-error">{{
-                fieldError('fecha_vencimiento')
-              }}</span>
+              <span class="field-error" id="correo-error">{{ fieldError('correo') }}</span>
             </div>
           </div>
           <div class="actions">
@@ -169,12 +167,21 @@
                   <span class="type-tag">{{ vehicle.tipo }}</span>
                 </td>
                 <td>
-                  <span class="month-tag" [class.expired]="estadoMensualidad(vehicle.fecha_vencimiento) === 'VENCIDA'">
-                    {{ estadoMensualidad(vehicle.fecha_vencimiento) }}
+                  <span class="month-tag" [class.expired]="vehicle.mensualidad === 'VENCIDA'">
+                    {{ vehicle.mensualidad }}
                   </span>
-                  <small class="month-date">{{ fechaLocal(vehicle.fecha_vencimiento) }}</small>
+                  <small class="month-date">{{
+                    vehicle.fecha_vencimiento ? fechaLocal(vehicle.fecha_vencimiento) : 'Sin pagos'
+                  }}</small>
                 </td>
                 <td class="row-actions">
+                  <a
+                    class="pay-link"
+                    routerLink="/pagos"
+                    [queryParams]="{ placa: vehicle.placa }"
+                    [attr.aria-label]="'Pagos de ' + vehicle.placa"
+                    >Pagos</a
+                  >
                   <button
                     type="button"
                     (click)="edit(vehicle)"

@@ -8,6 +8,7 @@ export interface CeldaCrear {
 export type CeldaActualizar = Partial<CeldaCrear>;
 export interface Celda extends CeldaCrear {
   id: number;
+  activa: boolean;
 }
 export interface CeldasPagina {
   items: Celda[];
@@ -16,11 +17,16 @@ export interface CeldasPagina {
   limit: number;
 }
 
+/** S5: el estado se calcula en el backend, nunca se guarda. */
+export type EstadoCelda = 'DISPONIBLE' | 'OCUPADA' | 'MANTENIMIENTO';
+
 export interface CeldaDisponible {
   id: number;
   codigo: string;
   tipo: TipoCelda;
-  estado: 'LIBRE' | 'OCUPADA';
+  activa: boolean;
+  estado: EstadoCelda;
+  placa: string | null;
 }
 export interface CupoTipo {
   total: number;

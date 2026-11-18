@@ -1,14 +1,14 @@
 <section class="management" aria-labelledby="exit-title">
   <header class="heading">
     <div>
-      <span class="eyebrow">AUTOS COLOMBIA</span>
+      <span class="eyebrow">PARKEO · OPERACIÓN</span>
       <h1 id="exit-title">Registrar salida</h1>
       <p>Consulta la placa, revisa la estancia abierta y confirma la salida.</p>
     </div>
   </header>
 
-  @if (operador(); as activo) {
-    <p class="operator-line">Operador en turno: <strong>{{ activo.nombre }}</strong></p>
+  @if (usuario(); as activo) {
+    <p class="operator-line">Usuario en sesión: <strong>{{ activo.nombre }}</strong></p>
   }
 
   <section class="panel" aria-label="Consulta de placa">

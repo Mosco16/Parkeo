@@ -100,4 +100,19 @@ export class Tablero {
     return `${valor.libres} libres de ${valor.total}`;
   }
 
+  textoEstado(celda: CeldaDisponible): string {
+    switch (celda.estado) {
+      case 'OCUPADA':
+        return 'Ocupada';
+      case 'MANTENIMIENTO':
+        return 'Mantenimiento';
+      default:
+        return 'Disponible';
+    }
+  }
+
+  etiqueta(celda: CeldaDisponible): string {
+    const detalle = celda.placa ? ` (${celda.placa})` : '';
+    return `${celda.codigo}: ${this.textoEstado(celda).toLowerCase()}${detalle}`;
+  }
 }

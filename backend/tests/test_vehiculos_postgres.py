@@ -9,7 +9,10 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_engine, get_session
+from app.dependencies import usuario_actual
 from app.main import app
+
+from conftest import usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_POSTGRES_TESTS") != "1",
@@ -23,16 +26,20 @@ def client():
         transaction = connection.begin()
         try:
             assert connection.scalar(text("SELECT current_database()")) == "autos_colombia"
-            assert connection.scalar(text("SELECT version_num FROM alembic_version")) in {"0003", "0004"}
+            assert int(connection.scalar(text("SELECT version_num FROM alembic_version"))) >= 5
             with Session(bind=connection, join_transaction_mode="create_savepoint") as session:
                 def override_session():
                     yield session
                 app.dependency_overrides[get_session] = override_session
+                app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+                    rol="ADMINISTRADOR"
+                )
                 try:
                     with TestClient(app) as api:
                         yield api
                 finally:
                     app.dependency_overrides.pop(get_session, None)
+                    app.dependency_overrides.pop(usuario_actual, None)
         finally:
             transaction.rollback()
 
@@ -40,14 +47,20 @@ def client():
 def test_crud_and_errors_in_postgres(client):
     suffix = uuid4().hex[:12].upper()
     payload = {"placa": f" test-{suffix} ", "color": "Azul", "modelo": 2025,
-               "marca": "Prueba", "tipo": "AUTOMOVIL", "fecha_vencimiento": "2027-01-31"}
+               "marca": "Prueba", "tipo": "AUTOMOVIL", "correo": f"test-{suffix}@correo.co"}
     created = client.post("/vehiculos", json=payload)
     assert created.status_code == 201
     vehicle = created.json()
     first_id = vehicle["id"]
     assert vehicle["placa"] == payload["placa"].strip().upper()
     assert vehicle["modelo"] == 2025
+    # El vencimiento ya no se escribe a mano (RN-VIG-01): sin pagos es nulo.
+    assert vehicle["fecha_vencimiento"] is None
+    # El contrato normaliza el correo a minúsculas (sección 4).
+    assert vehicle["correo"] == payload["correo"].lower()
+    assert vehicle["avisos_autorizados"] is False
     assert client.get(f"/vehiculos/{first_id}").json() == vehicle
+    assert client.post("/vehiculos", json={**payload, "fecha_vencimiento": "2027-01-31"}).status_code == 422
     assert client.post("/vehiculos", json=payload).status_code == 409
     # La sesión debe seguir siendo utilizable después del conflicto real de PostgreSQL.
     second = client.post("/vehiculos", json={**payload, "placa": f"SECOND-{suffix}"})

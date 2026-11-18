@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.models import Celda, Estancia
+from app.models import Celda, Estancia, Vehiculo
 from app.schemas.celda import CeldaActualizar, CeldaCrear
 
 
@@ -84,18 +84,59 @@ def delete_cell(session: Session, cell_id: int) -> None:
     session.commit()
 
 
+@database_operation
+def cambiar_estado(session: Session, cell_id: int, activa: bool) -> Celda:
+    cell = find_cell(session, cell_id)
+    if not activa and session.scalar(
+        select(Estancia.id).where(
+            Estancia.celda_id == cell.id, Estancia.salida.is_(None)
+        )
+    ) is not None:
+        raise CeldaError(
+            409, "La celda tiene una estancia abierta y no se puede desactivar."
+        )
+    cell.activa = activa
+    session.commit()
+    session.refresh(cell)
+    return cell
+
+
 def disponibilidad(session: Session) -> dict:
     # RN-CEL-03: el estado se calcula, nunca se guarda.
     subq_abierta = select(Estancia.celda_id).where(Estancia.salida.is_(None)).distinct().subquery()
     celdas = list(session.scalars(select(Celda).order_by(func.length(Celda.codigo), Celda.codigo)))
     ocupadas = set(session.scalars(select(subq_abierta.c.celda_id)))
+    # S8: la placa acompaña a la celda ocupada para el mapa del panel.
+    placas = {
+        celda_id: placa
+        for celda_id, placa in session.execute(
+            select(Estancia.celda_id, Vehiculo.placa)
+            .join(Vehiculo, Vehiculo.id == Estancia.vehiculo_id)
+            .where(Estancia.salida.is_(None))
+        )
+    }
     items = []
     cupo = {"AUTO": {"total": 0, "libres": 0}, "MOTO": {"total": 0, "libres": 0}}
     for celda in celdas:
-        estado = "OCUPADA" if celda.id in ocupadas else "LIBRE"
-        items.append({"id": celda.id, "codigo": celda.codigo, "tipo": celda.tipo, "estado": estado})
+        # Una celda en mantenimiento nunca se ofrece como disponible.
+        if not celda.activa:
+            estado = "MANTENIMIENTO"
+        elif celda.id in ocupadas:
+            estado = "OCUPADA"
+        else:
+            estado = "DISPONIBLE"
+        items.append(
+            {
+                "id": celda.id,
+                "codigo": celda.codigo,
+                "tipo": celda.tipo,
+                "activa": celda.activa,
+                "estado": estado,
+                "placa": placas.get(celda.id) if estado == "OCUPADA" else None,
+            }
+        )
         if celda.tipo in cupo:
             cupo[celda.tipo]["total"] += 1
-            if estado == "LIBRE":
+            if estado == "DISPONIBLE":
                 cupo[celda.tipo]["libres"] += 1
     return {"celdas": items, "cupo": cupo}

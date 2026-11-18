@@ -9,7 +9,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_engine, get_session
+from app.dependencies import usuario_actual
 from app.main import app
+
+from conftest import usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(os.getenv("RUN_POSTGRES_TESTS") != "1", reason="Requiere PostgreSQL local.")
 
@@ -28,10 +31,11 @@ def connection():
 def test_celda_schema_and_constraints(connection):
     inspector = inspect(connection)
     columns = {c['name']: c for c in inspector.get_columns('celda')}
-    assert set(columns) == {'id', 'codigo', 'tipo'}
+    assert set(columns) == {'id', 'codigo', 'tipo', 'activa'}
     assert str(columns['id']['type']) == 'BIGINT'
     assert columns['id']['identity']['always']
     assert all(not c['nullable'] for c in columns.values())
+    assert columns['activa']['default'] is not None
     assert inspector.get_pk_constraint('celda')['constrained_columns'] == ['id']
     assert any(c['column_names'] == ['codigo'] for c in inspector.get_unique_constraints('celda'))
     code = 'SCHEMA-' + uuid4().hex.upper()
@@ -51,6 +55,9 @@ def test_crud_celdas(connection):
         def override():
             yield session
         app.dependency_overrides[get_session] = override
+        app.dependency_overrides[usuario_actual] = lambda: usuario_de_prueba(
+            rol='ADMINISTRADOR'
+        )
         try:
             with TestClient(app) as client:
                 code = 'CELL-' + uuid4().hex.upper()
@@ -59,6 +66,7 @@ def test_crud_celdas(connection):
                 assert result.status_code == 201
                 item = result.json()
                 assert item['codigo'] == code and item['tipo'] == 'AUTO'
+                assert item['activa'] is True
                 path = f"/celdas/{item['id']}"
                 assert client.get(path).json() == item
                 assert client.post('/celdas', json=payload).status_code == 409
@@ -69,6 +77,17 @@ def test_crud_celdas(connection):
                                 {'tipo':'Libre'}, {'tipo':'auto'}):
                     assert client.patch(path, json=invalid).status_code == 422
                 assert client.post('/celdas', json={}).status_code == 422
+                for invalid in ({}, {'activa': None}, {'activa': 'quizas'}, {'activa': 1, 'x': 2}):
+                    assert client.patch(f'{path}/estado', json=invalid).status_code == 422
+                assert client.patch('/celdas/9223372036854775807/estado',
+                                    json={'activa': False}).status_code == 404
+                apagada = client.patch(f'{path}/estado', json={'activa': False})
+                assert apagada.status_code == 200 and apagada.json()['activa'] is False
+                disponible = client.get('/celdas/disponibilidad').json()
+                estado = {c['id']: c for c in disponible['celdas']}[item['id']]
+                assert estado['activa'] is False and estado['estado'] == 'MANTENIMIENTO'
+                encendida = client.patch(f'{path}/estado', json={'activa': True})
+                assert encendida.status_code == 200 and encendida.json()['activa'] is True
                 changed = client.patch(path, json={'tipo':'MOTO'})
                 assert changed.status_code == 200 and changed.json()['tipo'] == 'MOTO'
                 deleted = client.delete(path)
@@ -79,3 +98,4 @@ def test_crud_celdas(connection):
                 assert client.get('/health').json() == {'status':'ok'}
         finally:
             app.dependency_overrides.pop(get_session, None)
+            app.dependency_overrides.pop(usuario_actual, None)

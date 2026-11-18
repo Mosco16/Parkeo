@@ -1,0 +1,52 @@
+<section class="login-page" aria-labelledby="login-title">
+  <div class="login-card">
+    <header class="brand">
+      <img src="/parkeo-logo.jpeg" alt="Parkeo" width="72" height="72" />
+      <div>
+        <p class="eyebrow">Autos Colombia · Sede principal</p>
+        <h1 id="login-title">Parkeo</h1>
+        <p class="subtitle">Control vehicular con claridad.</p>
+      </div>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <label for="usuario">Usuario</label>
+      <input
+        id="usuario"
+        type="text"
+        formControlName="usuario"
+        autocomplete="username"
+        [attr.aria-invalid]="usuario.touched && usuario.invalid"
+        aria-describedby="usuario-error"
+      />
+      @if (usuario.touched && usuario.hasError('required')) {
+        <p class="field-error" id="usuario-error">Escribe tu usuario.</p>
+      }
+
+      <label for="password">Contraseña</label>
+      <input
+        id="password"
+        type="password"
+        formControlName="password"
+        autocomplete="current-password"
+        [attr.aria-invalid]="password.touched && password.invalid"
+        aria-describedby="password-error"
+      />
+      @if (password.touched && password.hasError('required')) {
+        <p class="field-error" id="password-error">Escribe tu contraseña.</p>
+      } @else if (password.touched && password.hasError('minlength')) {
+        <p class="field-error" id="password-error">La contraseña tiene al menos 8 caracteres.</p>
+      }
+
+      @if (error()) {
+        <p class="form-error" role="alert">{{ error() }}</p>
+      }
+
+      <button type="submit" [disabled]="enviando()">
+        {{ enviando() ? 'Ingresando…' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <p class="help">¿No tienes cuenta? Solicita acceso al administrador del parqueadero.</p>
+  </div>
+</section>

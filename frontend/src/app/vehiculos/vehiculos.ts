@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import {
   ErrorApi,
@@ -17,20 +18,16 @@ const year: ValidatorFn = (control) =>
   Number.isInteger(control.value) && control.value >= 1 && control.value <= 9999
     ? null
     : { year: true };
-const fecha: ValidatorFn = (control) => {
-  const valor = control.value;
-  if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return { fecha: true };
-  const [anio, mes, dia] = valor.split('-').map(Number);
-  const fecha = new Date(anio, mes - 1, dia);
-  return fecha.getFullYear() === anio && fecha.getMonth() === mes - 1 && fecha.getDate() === dia
+const PATRON_CORREO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const correo: ValidatorFn = (control) =>
+  !control.value || PATRON_CORREO.test(String(control.value).trim().toLowerCase())
     ? null
-    : { fecha: true };
-};
+    : { correo: true };
 type Field = keyof VehiculoCrear;
 
 @Component({
   selector: 'app-vehiculos',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './vehiculos.html',
   styleUrl: './vehiculos.css',
 })
@@ -55,7 +52,7 @@ export class Vehiculos {
       Validators.required,
       (control) => (this.types.includes(control.value) ? null : { type: true }),
     ]),
-    fecha_vencimiento: this.fb.nonNullable.control('', [Validators.required, fecha]),
+    correo: this.fb.nonNullable.control('', correo),
   });
   readonly items = signal<Vehiculo[]>([]);
   readonly total = signal(0);
@@ -125,7 +122,7 @@ export class Vehiculos {
         next: (data) => {
           this.loading.set(false);
           this.editing.set(data.id);
-          this.form.reset(data);
+          this.form.reset({ ...data, correo: data.correo ?? '' });
           this.showForm.set(true);
         },
         error: (error) => {
@@ -149,7 +146,7 @@ export class Vehiculos {
     if (control.errors['required']) return 'Este campo es obligatorio y no puede estar vacío.';
     if (field === 'modelo') return 'Introduce un año entero entre 1 y 9999.';
     if (field === 'tipo') return 'Selecciona un tipo válido.';
-    if (field === 'fecha_vencimiento') return 'Introduce una fecha válida (AAAA-MM-DD).';
+    if (field === 'correo') return 'Introduce un correo válido o deja el campo vacío.';
     return 'Revisa este campo.';
   }
 
@@ -167,7 +164,7 @@ export class Vehiculos {
       marca: value.marca.trim(),
       modelo: value.modelo!,
       tipo: value.tipo as TipoVehiculo,
-      fecha_vencimiento: value.fecha_vencimiento,
+      correo: value.correo.trim().toLowerCase() || null,
     };
     this.form.controls.placa.setValue(payload.placa);
     this.saving.set(true);
@@ -214,20 +211,6 @@ export class Vehiculos {
       month: '2-digit',
       year: 'numeric',
     });
-  }
-
-  /** RN-VIG-02: la mensualidad vence al terminar el día anterior a la fecha. */
-  estadoMensualidad(iso: string): 'VIGENTE' | 'VENCIDA' {
-    return this.hoyBogota() < iso ? 'VIGENTE' : 'VENCIDA';
-  }
-
-  private hoyBogota(): string {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Bogota',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
   }
 
   private setFieldError(field: Field, message: string): void {

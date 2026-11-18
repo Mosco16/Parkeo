@@ -35,10 +35,17 @@ describe('Cambiar celda', () => {
     celda_sugerida: null,
   };
   const celdas = [
-    { ...celdaA1, estado: 'OCUPADA' as const },
-    { ...celdaA2, estado: 'LIBRE' as const },
-    { id: 9, codigo: 'M1', tipo: 'MOTO' as const, estado: 'LIBRE' as const },
-    { id: 3, codigo: 'A3', tipo: 'AUTO' as const, estado: 'OCUPADA' as const },
+    { ...celdaA1, activa: true, estado: 'OCUPADA' as const, placa: null },
+    { ...celdaA2, activa: true, estado: 'DISPONIBLE' as const, placa: null },
+    {
+      id: 9,
+      codigo: 'M1',
+      tipo: 'MOTO' as const,
+      activa: true,
+      estado: 'DISPONIBLE' as const,
+      placa: null,
+    },
+    { id: 3, codigo: 'A3', tipo: 'AUTO' as const, activa: true, estado: 'OCUPADA' as const, placa: 'XYZ987' },
   ];
 
   beforeEach(() => {

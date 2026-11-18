@@ -1,0 +1,54 @@
+REGISTRO DE EJECUCION - Casos del plan de pruebas de Parkeo
+Fecha: 12 de noviembre de 2026
+Entorno: backend local en http://127.0.0.1:8000 contra la base autos_colombia (0007 head)
+Medio: solicitudes HTTP reales con las cuentas de demostracion.
+Alcance: reejecucion de los nueve casos que quedaron pendientes el 11 de noviembre.
+No cubre: observacion de las pantallas en navegador, que se documenta aparte con capturas.
+Las contrasenas y los tokens no se incluyen en este registro.
+
+EJECUCION DE CASOS - http://127.0.0.1:8000
+Comprobaciones: 20 | correctas: 20 | no coinciden: 0
+Estado al cerrar: estancias abiertas 0 | celdas 80 activas de 80 | cambios de celda 8
+
+US-09 - documento o usuario duplicado (0 cuentas creadas; el listado sigue en 18 operadores)
+[OK ] US-09a  POST /usuarios usuario=ana.gomez          409 | Ese nombre de usuario ya está en uso.
+[OK ] US-09b  POST /usuarios documento=1000000005       409 | Ya existe una cuenta con ese documento.
+[OK ] US-09c  POST /usuarios usuario="  ANA.GOMEZ  "    409 | Ese nombre de usuario ya está en uso.
+[OK ] US-09d  POST /usuarios documento="  1000000002  " 409 | Ya existe una cuenta con ese documento.
+
+US-10 - validaciones de la cuenta nueva
+[OK ] US-10a  password de 7 caracteres                  422 | too_short: not 7
+[OK ] US-10b  password de 73 caracteres                 422 | too_long: not 73
+[OK ] US-10c  documento, nombre y usuario en blanco     422 | El campo debe ser texto no vacío.
+[OK ] US-10d  alta sin telefono, correo ni direccion    201 | prueba.opcionales
+
+US-12 - activar y desactivar un operador
+[OK ] US-12a  PATCH /usuarios/113/estado activo=false   200 | activo=False
+[OK ] US-12b  POST /auth/login laura.rios desactivada   403 | La cuenta está inactiva. Contacta al administrador.
+[OK ] US-12c  PATCH /usuarios/113/estado activo=true    200 | activo=True
+[OK ] US-12d  POST /auth/login laura.rios reactivada    200 | rol=OPERADOR
+[OK ] US-12e  PATCH /usuarios/110/estado (admin)        403 | No se puede cambiar el estado de una cuenta administradora.
+
+US-13 - restablecer la contrasena
+[OK ] US-13a  POST /auth/login con la anterior          401 | Usuario o contraseña incorrectos.
+[OK ] US-13b  POST /auth/login con la nueva             200 | rol=OPERADOR
+[OK ] US-13c  restablecer con 7 caracteres              422 | too_short: not 7
+[OK ] US-13d  restablecer con 73 caracteres             422 | too_long: not 73
+[OK ] US-13e  la contrasena vigente no cambia           200 | rol=OPERADOR
+
+CE-04 y CE-05 - mantenimiento y habilitacion de la celda A2
+[OK ] CE-04   GET /celdas A2                            200 | activa=False (persiste tras recargar)
+[OK ] CE-05   GET /celdas A2                            200 | activa=True
+
+CE-11 - la salida libera la celda
+[OK ] CE-11   POST /estancias/salida ABC123             200 | celda=A1 | usuario_salida=admin | A1=DISPONIBLE
+[OK ] CE-11b  GET /celdas/disponibilidad                200 | AUTO libres=70 de 70
+
+CE-13 - cambiar una estancia de celda
+[OK ] CE-13   POST /estancias/cambiar-celda A1->A2      200 | entrada original conservada | A1 libre
+
+CE-14 - cambio de celda invalido
+[OK ] CE-14a  POST /estancias/cambiar-celda a la misma A1     409 | La celda de destino debe ser distinta a la actual.
+[OK ] CE-14b  POST /estancias/cambiar-celda a M1 (MOTO)       409 | La celda no está disponible o es de otro tipo.
+[OK ] CE-14c  POST /estancias/cambiar-celda DEMO01 sin estancia 409 | El vehículo no tiene una entrada abierta.
+[OK ] CE-14d  GET /estancias/vehiculo/ABC123 tras los intentos 200 | esta_dentro=True | celda=A1

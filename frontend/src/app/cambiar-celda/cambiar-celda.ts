@@ -109,7 +109,7 @@ export class CambiarCelda {
           this.libres.set(
             data.celdas.filter(
               (item) =>
-                item.estado === 'LIBRE' && item.tipo === requerido && item.id !== actual,
+                item.estado === 'DISPONIBLE' && item.tipo === requerido && item.id !== actual,
             ),
           );
           this.celda.setValue(null);
