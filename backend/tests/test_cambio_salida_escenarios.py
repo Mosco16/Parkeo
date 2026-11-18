@@ -14,9 +14,9 @@ from sqlalchemy.orm import Session
 from app.database import get_engine
 from app.dependencies import usuario_actual
 from app.main import app
-from app.models import CambioCelda, Celda, Estancia, Usuario, Vehiculo
+from app.models import CambioCelda, Celda, Estancia, Pago, Usuario, Vehiculo
 
-from conftest import usuario_de_prueba
+from conftest import con_pago, usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -48,13 +48,16 @@ def datos():
         ]
         vehiculos = {
             'auto': Vehiculo(placa=f'{token}-AUTO', color='Azul', modelo=2026, marca='Prueba',
-                             tipo='AUTOMOVIL', fecha_vencimiento=vigente),
+                             tipo='AUTOMOVIL'),
             'auto2': Vehiculo(placa=f'{token}-AUTO2', color='Gris', modelo=2026, marca='Prueba',
-                              tipo='AUTOMOVIL', fecha_vencimiento=vigente),
+                              tipo='AUTOMOVIL'),
         }
         s.add(usuario)
         s.add_all(celdas)
         s.add_all(vehiculos.values())
+        s.flush()
+        for vehiculo in vehiculos.values():
+            con_pago(vehiculo, vigente, usuario_id=usuario.id)
         s.flush()
         data = {
             'placas': {clave: vehiculo.placa for clave, vehiculo in vehiculos.items()},
@@ -82,6 +85,7 @@ def datos():
                     )
                 )
             )
+            s.execute(delete(Pago).where(Pago.vehiculo_id.in_(data['vehiculos'])))
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(data['vehiculos'])))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(data['vehiculos'])))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
@@ -227,8 +231,14 @@ def test_e13_salida_con_mensualidad_vencida_no_se_bloquea(datos):
     with TestClient(app) as client:
         assert client.post('/estancias/entrada', json=entrada(d)).status_code == 201
         with Session(get_engine()) as s, s.begin():
-            vehiculo = s.get(Vehiculo, d['ids']['auto'])
-            vehiculo.fecha_vencimiento = date.today() - timedelta(days=1)
+            pago = s.scalar(
+                select(Pago).where(
+                    Pago.vehiculo_id == d['ids']['auto'],
+                    Pago.anulacion_fecha_hora.is_(None),
+                )
+            )
+            # Mueve el vencimiento derivado al pasado: ya está VENCIDA.
+            pago.vencimiento_ciclo = date.today() - timedelta(days=1)
         assert estado(d)['mensualidad'] == 'VENCIDA'
 
         salida = client.post('/estancias/salida', json=entrada(d))

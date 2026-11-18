@@ -9,7 +9,7 @@ from app.schemas.vehiculo import VehiculoActualizar, VehiculoCrear
 from app.services.vehiculo import VehiculoError, delete_vehicle
 
 
-@pytest.mark.parametrize("field", ["placa", "color", "modelo", "marca", "tipo", "fecha_vencimiento"])
+@pytest.mark.parametrize("field", ["placa", "color", "modelo", "marca", "tipo", "correo"])
 def test_patch_rejects_explicit_null(field):
     with pytest.raises(ValidationError):
         VehiculoActualizar(**{field: None})
@@ -33,11 +33,17 @@ def test_creation_requires_every_field():
         VehiculoCrear(placa="ABC123")
 
 
-def test_creation_requires_fecha_vencimiento():
+def test_creation_no_acepta_vencimiento_manual_y_valida_correo():
+    # RN-VIG-01: el vencimiento se deriva de los pagos, no se escribe a mano.
     with pytest.raises(ValidationError):
-        VehiculoCrear(placa="ABC123", color="Azul", modelo=2025, marca="Marca", tipo="MOTO")
-    assert VehiculoCrear(placa="ABC123", color="Azul", modelo=2025, marca="Marca",
-                         tipo="MOTO", fecha_vencimiento="2027-01-31").fecha_vencimiento.isoformat() == "2027-01-31"
+        VehiculoCrear(placa="ABC123", color="Azul", modelo=2025, marca="Marca",
+                      tipo="MOTO", fecha_vencimiento="2027-01-31")
+    creado = VehiculoCrear(placa=" ABC123 ", color="Azul", modelo=2025, marca="Marca",
+                           tipo="MOTO", correo=" Dueno@Correo.CO ")
+    assert creado.placa == "ABC123" and creado.correo == "dueno@correo.co"
+    with pytest.raises(ValidationError):
+        VehiculoCrear(placa="ABC123", color="Azul", modelo=2025, marca="Marca",
+                      tipo="MOTO", correo="sin-arroba")
 
 
 def test_delete_foreign_key_conflict_rolls_back_without_related_deletes():

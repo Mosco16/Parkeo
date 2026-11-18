@@ -1,10 +1,11 @@
+import re
+
 from datetime import date
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, field_validator
 
 from app.models import required_text
-
 
 Texto = Annotated[str, BeforeValidator(lambda value: required_text(value, "El campo"))]
 Placa = Annotated[Texto, AfterValidator(str.upper)]
@@ -14,8 +15,23 @@ TipoVehiculo = Annotated[
     BeforeValidator(lambda value: required_text(value, "tipo")),
 ]
 
+PATRON_CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def validar_correo(value: str) -> str:
+    """Correo opcional con formato válido, sin espacios en los extremos (sección 4)."""
+    value = value.strip().lower()
+    if not PATRON_CORREO.match(value):
+        raise ValueError("El correo no tiene un formato válido.")
+    return value
+
+
+Correo = Annotated[str, BeforeValidator(lambda value: required_text(value, "correo")), AfterValidator(validar_correo)]
+
 
 class VehiculoCrear(BaseModel):
+    """El vencimiento ya no se escribe: se deriva de los pagos (RN-VIG-01)."""
+
     model_config = ConfigDict(extra="forbid")
 
     placa: Placa
@@ -23,7 +39,7 @@ class VehiculoCrear(BaseModel):
     modelo: Anio
     marca: Texto
     tipo: TipoVehiculo
-    fecha_vencimiento: date
+    correo: Correo | None = None
 
 
 class VehiculoActualizar(BaseModel):
@@ -34,7 +50,7 @@ class VehiculoActualizar(BaseModel):
     modelo: Anio | None = None
     marca: Texto | None = None
     tipo: TipoVehiculo | None = None
-    fecha_vencimiento: date | None = None
+    correo: Correo | None = None
 
     @field_validator("*", mode="before")
     @classmethod
@@ -44,9 +60,18 @@ class VehiculoActualizar(BaseModel):
         return value
 
 
-class VehiculoRespuesta(VehiculoCrear):
+class VehiculoRespuesta(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
+
     id: int
+    placa: str
+    color: str
+    modelo: int
+    marca: str
+    tipo: TipoVehiculo
+    correo: str | None = None
+    avisos_autorizados: bool = False
+    fecha_vencimiento: date | None = None
 
 
 class VehiculosPagina(BaseModel):

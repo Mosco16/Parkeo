@@ -47,14 +47,18 @@ def client():
 def test_crud_and_errors_in_postgres(client):
     suffix = uuid4().hex[:12].upper()
     payload = {"placa": f" test-{suffix} ", "color": "Azul", "modelo": 2025,
-               "marca": "Prueba", "tipo": "AUTOMOVIL", "fecha_vencimiento": "2027-01-31"}
+               "marca": "Prueba", "tipo": "AUTOMOVIL", "correo": f"test-{suffix}@correo.co"}
     created = client.post("/vehiculos", json=payload)
     assert created.status_code == 201
     vehicle = created.json()
     first_id = vehicle["id"]
     assert vehicle["placa"] == payload["placa"].strip().upper()
     assert vehicle["modelo"] == 2025
+    # El vencimiento ya no se escribe a mano (RN-VIG-01): sin pagos es nulo.
+    assert vehicle["fecha_vencimiento"] is None
+    assert vehicle["correo"] == payload["correo"] and vehicle["avisos_autorizados"] is False
     assert client.get(f"/vehiculos/{first_id}").json() == vehicle
+    assert client.post("/vehiculos", json={**payload, "fecha_vencimiento": "2027-01-31"}).status_code == 422
     assert client.post("/vehiculos", json=payload).status_code == 409
     # La sesión debe seguir siendo utilizable después del conflicto real de PostgreSQL.
     second = client.post("/vehiculos", json={**payload, "placa": f"SECOND-{suffix}"})

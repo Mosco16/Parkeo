@@ -15,9 +15,9 @@ from sqlalchemy.orm import Session
 from app.database import get_engine
 from app.dependencies import usuario_actual
 from app.main import app
-from app.models import Celda, Estancia, Usuario, Vehiculo
+from app.models import Celda, Estancia, Pago, Usuario, Vehiculo
 
-from conftest import usuario_de_prueba
+from conftest import con_pago, usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -37,7 +37,6 @@ def datos():
         assert int(c.scalar(text('SELECT version_num FROM alembic_version'))) >= 5
 
     token = 'TEST-ENT-' + uuid4().hex.upper()
-    vigente = date.today() + timedelta(days=30)
     with Session(engine) as s, s.begin():
         usuario = Usuario(
             documento=f'{token}-OP', nombre=f'{token}-OP', telefono='001',
@@ -48,22 +47,34 @@ def datos():
             Celda(codigo=f'{token}-A2', tipo='AUTO'),
             Celda(codigo=f'{token}-M1', tipo='MOTO'),
         ]
+        vigente = date.today() + timedelta(days=30)
+        vencimientos = {
+            'auto': vigente,
+            'camioneta': vigente,
+            'moto': vigente,
+            'vencido': date.today() - timedelta(days=5),
+            'borde': date(2026, 6, 15),
+        }
         # ABC123 (auto), DEF456 (camioneta) y GHI12J (moto) con placa irrepetible.
         vehiculos = {
             'auto': Vehiculo(placa=f'{token}-AUTO', color='Azul', modelo=2026, marca='Prueba',
-                             tipo='AUTOMOVIL', fecha_vencimiento=vigente),
+                             tipo='AUTOMOVIL'),
             'camioneta': Vehiculo(placa=f'{token}-CAM', color='Gris', modelo=2026, marca='Prueba',
-                                  tipo='CAMIONETA', fecha_vencimiento=vigente),
+                                  tipo='CAMIONETA'),
             'moto': Vehiculo(placa=f'{token}-MOTO', color='Rojo', modelo=2026, marca='Prueba',
-                             tipo='MOTO', fecha_vencimiento=vigente),
+                             tipo='MOTO'),
             'vencido': Vehiculo(placa=f'{token}-VENC', color='Negro', modelo=2026, marca='Prueba',
-                                tipo='AUTOMOVIL', fecha_vencimiento=date.today() - timedelta(days=5)),
+                                tipo='AUTOMOVIL'),
             'borde': Vehiculo(placa=f'{token}-BORDE', color='Blanco', modelo=2026, marca='Prueba',
-                              tipo='AUTOMOVIL', fecha_vencimiento=date(2026, 6, 15)),
+                              tipo='AUTOMOVIL'),
         }
         s.add(usuario)
         s.add_all(celdas)
         s.add_all(vehiculos.values())
+        s.flush()
+        # El vencimiento se deriva de los pagos activos (RN-VIG-01).
+        for clave, vehiculo in vehiculos.items():
+            con_pago(vehiculo, vencimientos[clave], usuario_id=usuario.id)
         s.flush()
         data = {
             'token': token,
@@ -84,6 +95,7 @@ def datos():
         app.dependency_overrides.pop(usuario_actual, None)
         ids = data['vehiculos'] + data['extras']['vehiculos']
         with Session(engine) as s, s.begin():
+            s.execute(delete(Pago).where(Pago.vehiculo_id.in_(ids)))
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(ids)))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(ids)))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
@@ -127,9 +139,11 @@ def ocupar_todas(d, tipo):
         for numero, celda in enumerate(libres):
             vehiculo = Vehiculo(
                 placa=f"{d['token']}-OCUP-{numero}", color='X', modelo=2020, marca='X',
-                tipo='AUTOMOVIL', fecha_vencimiento=date(2030, 1, 1),
+                tipo='AUTOMOVIL',
             )
             s.add(vehiculo)
+            s.flush()
+            con_pago(vehiculo, date(2030, 1, 1), usuario_id=usuario.id)
             s.flush()
             d['extras']['vehiculos'].append(vehiculo.id)
             s.add(Estancia(

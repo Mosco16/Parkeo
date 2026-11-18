@@ -68,8 +68,10 @@ def hoy_bogota() -> date:
 
 
 def mensualidad(vehiculo: Vehiculo) -> str:
-    # VIGENTE solo si hoy es anterior a fecha_vencimiento. Si vence hoy, ya es VENCIDA.
-    if hoy_bogota() < vehiculo.fecha_vencimiento:
+    # RN-VIG-03 y RN-VIG-05: VIGENTE solo si hoy es anterior al vencimiento
+    # derivado. Si vence hoy, o el vehículo no tiene pagos, ya es VENCIDA.
+    vencimiento = vehiculo.fecha_vencimiento
+    if vencimiento is not None and hoy_bogota() < vencimiento:
         return "VIGENTE"
     return "VENCIDA"
 

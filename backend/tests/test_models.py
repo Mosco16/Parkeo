@@ -1,11 +1,13 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.schema import CreateTable
 
-from app.models import Base, Celda, Usuario, Vehiculo
+from app.models import Aviso, Base, Celda, Pago, Usuario, Vehiculo
+
+from conftest import con_pago
 
 VENCIMIENTO = date(2027, 1, 31)
 
@@ -22,9 +24,20 @@ def nuevo_usuario(**cambios) -> Usuario:
     return Usuario(**datos)
 
 
+def nuevo_vehiculo(**cambios) -> Vehiculo:
+    datos = {
+        "placa": "ABC123",
+        "color": "Azul",
+        "modelo": 2025,
+        "marca": "Marca",
+        "tipo": "MOTO",
+    }
+    datos.update(cambios)
+    return Vehiculo(**datos)
+
+
 def test_normalizes_unique_identifiers_on_creation_and_assignment():
-    vehicle = Vehiculo(placa=" \tabc123\n", color="Azul", modelo=2025, marca="Marca",
-                       tipo="MOTO", fecha_vencimiento=VENCIMIENTO)
+    vehicle = nuevo_vehiculo(placa=" \tabc123\n")
     cell = Celda(codigo=" a-01 ", tipo="AUTO")
     usuario = nuevo_usuario(usuario=" Ana.Gomez ")
     assert vehicle.placa == "ABC123"
@@ -50,17 +63,17 @@ def test_rejects_empty_text(model, attribute, value):
 @pytest.mark.parametrize("value", [0, 10000, True, "2025", 2025.5, None])
 def test_rejects_invalid_year(value):
     with pytest.raises(ValueError):
-        Vehiculo(modelo=value, fecha_vencimiento=VENCIMIENTO)
+        Vehiculo(modelo=value)
 
 
 @pytest.mark.parametrize("value", ["MOTO", "AUTOMOVIL", "CAMIONETA"])
 def test_vehicle_types(value):
-    assert Vehiculo(tipo=value, fecha_vencimiento=VENCIMIENTO).tipo == value
+    assert Vehiculo(tipo=value).tipo == value
 
 
 def test_rejects_unknown_types_and_preserves_phone_text():
     with pytest.raises(ValueError):
-        Vehiculo(tipo="CAMION", fecha_vencimiento=VENCIMIENTO)
+        Vehiculo(tipo="CAMION")
     assert nuevo_usuario(telefono="+57 00123").telefono == "+57 00123"
     with pytest.raises(ValueError, match="tipo debe ser AUTO o MOTO."):
         Celda(tipo="Categoría futura")
@@ -88,17 +101,47 @@ def test_telefono_correo_y_direccion_son_opcionales():
 
 
 def test_required_columns_and_identity():
-    for name in ("vehiculo", "celda", "usuario"):
+    for name in ("vehiculo", "celda", "usuario", "pago", "aviso"):
         table = Base.metadata.tables[name]
         assert isinstance(table.c.id.type, sa.BigInteger)
         assert table.c.id.identity.always is True
-    assert all(not column.nullable for column in Base.metadata.tables["vehiculo"].columns)
+    vehiculo = Base.metadata.tables["vehiculo"]
+    assert {column.name for column in vehiculo.columns if column.nullable} == {
+        "correo", "autorizacion_usuario_id", "autorizacion_fecha_hora",
+    }
     assert all(not column.nullable for column in Base.metadata.tables["celda"].columns)
     usuario = Base.metadata.tables["usuario"]
     assert {column.name for column in usuario.columns if column.nullable} == {
         "telefono", "correo", "direccion",
     }
     assert usuario.c.activo.server_default is not None
+
+
+def test_con_pago_deriva_el_vencimiento_y_la_vigencia():
+    vehiculo = con_pago(nuevo_vehiculo(), VENCIMIENTO)
+    assert vehiculo.fecha_vencimiento == VENCIMIENTO
+    assert vehiculo.dia_corte == VENCIMIENTO.day
+    assert [pago.referencia for pago in vehiculo.pagos_activos] == ["REF-ABC123"]
+    assert nuevo_vehiculo().fecha_vencimiento is None
+
+    anulado = con_pago(nuevo_vehiculo(placa="XYZ789"), VENCIMIENTO, referencia="REF-2")
+    anulado.pagos[0].anulacion_fecha_hora = datetime.now(timezone.utc)
+    anulado.pagos[0].anulacion_usuario_id = 1
+    anulado.pagos[0].anulacion_motivo = "Otro"
+    assert anulado.fecha_vencimiento is None
+    assert anulado.dia_corte is None
+
+
+def test_pago_rechaza_motivo_fuera_del_catalogo_y_dia_corte_invalido():
+    with pytest.raises(ValueError):
+        Pago(referencia="REF", valor=1000, dia_corte=32)
+    with pytest.raises(ValueError):
+        Pago(referencia="REF", valor=1000, dia_corte=1, anulacion_motivo="Cualquiera")
+
+
+def test_aviso_rechaza_resultado_fuera_del_catalogo():
+    with pytest.raises(ValueError):
+        Aviso(vehiculo_id=1, correo="a@b.co", fecha_vencimiento=VENCIMIENTO, resultado="OTRO")
 
 
 def test_usuario_tiene_unicos_y_restricciones():

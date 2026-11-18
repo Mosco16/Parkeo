@@ -17,9 +17,9 @@ from sqlalchemy.orm import Session
 from app.database import get_engine
 from app.dependencies import usuario_actual
 from app.main import app
-from app.models import Celda, Estancia, Usuario, Vehiculo
+from app.models import Celda, Estancia, Pago, Usuario, Vehiculo
 
-from conftest import usuario_de_prueba
+from conftest import con_pago, usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -43,12 +43,15 @@ def datos():
         celdas = [Celda(codigo=f'{token}-A{n}', tipo='AUTO') for n in (1, 2)]
         vehiculos = [
             Vehiculo(placa=f'{token}-{n}', color='Azul', modelo=2026, marca='Prueba',
-                     tipo='AUTOMOVIL', fecha_vencimiento=vigente)
+                     tipo='AUTOMOVIL')
             for n in (1, 2)
         ]
         s.add(usuario)
         s.add_all(celdas)
         s.add_all(vehiculos)
+        s.flush()
+        for vehiculo in vehiculos:
+            con_pago(vehiculo, vigente, usuario_id=usuario.id)
         s.flush()
         data = {
             'celdas': [c.id for c in celdas],
@@ -69,6 +72,7 @@ def datos():
         app.dependency_overrides.pop(usuario_actual, None)
         todos = data['vehiculos'] + data['extras']['vehiculos']
         with Session(engine) as s, s.begin():
+            s.execute(delete(Pago).where(Pago.vehiculo_id.in_(todos)))
             s.execute(delete(Estancia).where(Estancia.vehiculo_id.in_(todos)))
             s.execute(delete(Vehiculo).where(Vehiculo.id.in_(todos)))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
@@ -103,9 +107,11 @@ def aislar(d, token):
         for numero, celda in enumerate(otras):
             vehiculo = Vehiculo(
                 placa=f'{token}-OCUP-{numero}', color='X', modelo=2020, marca='X',
-                tipo='AUTOMOVIL', fecha_vencimiento=date(2030, 1, 1),
+                tipo='AUTOMOVIL',
             )
             s.add(vehiculo)
+            s.flush()
+            con_pago(vehiculo, date(2030, 1, 1), usuario_id=usuario.id)
             s.flush()
             d['extras']['vehiculos'].append(vehiculo.id)
             s.add(Estancia(

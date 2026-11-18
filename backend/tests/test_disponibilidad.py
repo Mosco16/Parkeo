@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 from app.database import get_engine
 from app.dependencies import usuario_actual
 from app.main import app
-from app.models import Celda, Estancia, Usuario, Vehiculo
+from app.models import Celda, Estancia, Pago, Usuario, Vehiculo
 
-from conftest import usuario_de_prueba
+from conftest import con_pago, usuario_de_prueba
 
 pytestmark = pytest.mark.skipif(
     os.getenv('RUN_POSTGRES_TESTS') != '1', reason='Requiere PostgreSQL local.'
@@ -37,10 +37,12 @@ def datos():
             Celda(codigo=f'{token}-M1', tipo='MOTO'),
         ]
         vehiculo = Vehiculo(placa=f'{token}-AUTO', color='Azul', modelo=2026, marca='Prueba',
-                            tipo='AUTOMOVIL', fecha_vencimiento=date.today() + timedelta(days=30))
+                            tipo='AUTOMOVIL')
         s.add(usuario)
         s.add_all(celdas)
         s.add(vehiculo)
+        s.flush()
+        con_pago(vehiculo, date.today() + timedelta(days=30), usuario_id=usuario.id)
         s.flush()
         data = {
             'token': token,
@@ -57,6 +59,7 @@ def datos():
     finally:
         app.dependency_overrides.pop(usuario_actual, None)
         with Session(engine) as s, s.begin():
+            s.execute(delete(Pago).where(Pago.vehiculo_id == data['vehiculo']))
             s.execute(delete(Estancia).where(Estancia.vehiculo_id == data['vehiculo']))
             s.execute(delete(Vehiculo).where(Vehiculo.id == data['vehiculo']))
             s.execute(delete(Celda).where(Celda.id.in_(data['celdas'])))
