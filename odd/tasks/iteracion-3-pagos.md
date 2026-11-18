@@ -117,7 +117,7 @@ idempotente y suma pagos de ejemplo: ABC123 vigente y DEF456 por vencer a dos d�
 | T6 | Correo con logo, job de avisos y registro | S10 | inline | hecho |
 | T7 | Frontend: registrar pago, anular, historial | S12 | delegated | hecho |
 | T8 | Frontend: integración en entrada y vehículos | S12 | delegated | hecho |
-| T9 | Datos demo, documentación y evidencias | S14 | inline | pendiente |
+| T9 | Datos demo, documentación y evidencias | S14 | inline | hecho |
 
 ---
 
@@ -177,3 +177,18 @@ vencida, registrar entrada ofrece «Registrar pago de esta placa»; el listado d
 vehículos tiene acceso «Pagos» por fila. `/pagos?placa=...` prellena placa y
 carga el historial de esa placa. Se agregó `provideRouter([])` a las specs
 afectadas. Frontend `86 passed` y build sin advertencias de presupuesto.
+
+**L11 (18/11/2026).** T9 completa: el script demo ya cargaba un pago por vehículo
+(ABC123 vigente, DEF456 a dos días del vencimiento) y sigue siendo idempotente.
+Se documentaron pagos, avisos, vencimiento derivado, migraciones `0008`/`0009`,
+variables `SMTP_*`, el CLI `enviar_avisos.py` y la ruta `/pagos` en `README.md`,
+`AGENTS.md` y los README de backend y frontend. Verificación final: backend
+`277 passed, 26 skipped`, `pip check` limpio, migraciones válidas en modo SQL
+offline; frontend `86 passed` y build correcto. Pendiente para la demo: cargar
+las variables SMTP en `backend/.env`, aplicar `0008`/`0009` en PostgreSQL y
+revocar la contraseña de aplicación que se pegó en el chat.
+
+**L12 (18/11/2026).** Revisión nativa: `gentle-ai review assess` con base
+`6974b55` y `--committed-only` devolvió `risk: medium`, `review_due: false`,
+`review_due_reason: under_budget`. Sin transacción de revisión ni consentimiento
+pendiente.

@@ -9,31 +9,38 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
   HTTP 200 y `{"status": "ok"}`.
 - `backend/tests/`: pruebas con pytest y `TestClient`.
 - `backend/app/config.py`: carga `backend/.env` por ruta absoluta; incluye
-  configuración de base de datos (`load_database_settings`) y seguridad JWT
-  (`load_security_settings`).
+  configuración de base de datos (`load_database_settings`), seguridad JWT
+  (`load_security_settings`) y correo (`load_mail_settings`, `MailSettings`).
 - `backend/app/database.py`: motor SQLAlchemy y sesiones bajo demanda con psycopg.
 - `backend/check_db.py`: comprobación explícita mediante `SELECT 1`, sin DDL.
-- `backend/app/models.py`: Base, Vehiculo, Celda, Usuario, Estancia y CambioCelda;
-  tablas en singular y minúsculas.
+- `backend/app/models.py`: Base, Vehiculo, Celda, Usuario, Estancia, CambioCelda,
+  Pago y Aviso; tablas en singular y minúsculas. `vehiculo.fecha_vencimiento` es
+  una propiedad derivada de `max(pago.vencimiento_ciclo)` de los pagos activos.
 - `backend/app/security.py`: hashing de contraseñas con bcrypt (costo 12) y
   generación/verificación de tokens JWT HS256.
 - `backend/app/dependencies.py`: dependencias FastAPI para autenticación:
   `usuario_actual` (cualquier usuario activo) y `requiere_administrador`
   (exige rol `ADMINISTRADOR`).
 - `backend/app/schemas/`: contratos Pydantic por recurso (`vehiculo.py`,
-  `celda.py`, `usuario.py`, `estancia.py`, `auth.py`).
+  `celda.py`, `usuario.py`, `estancia.py`, `auth.py`, `pago.py`).
 - `backend/app/routers/`: routers FastAPI (`auth.py`, `vehiculos.py`, `celdas.py`,
-  `usuarios.py`, `estancias.py`). Todos los endpoints de operación y gestión
-  exigen autenticación previa.
+  `usuarios.py`, `estancias.py`, `pagos.py`). Todos los endpoints de operación y
+  gestión exigen autenticación previa.
 - `backend/app/services/`: lógica de negocio, transacciones y errores públicos
-  (`auth.py`, `vehiculo.py`, `celda.py`, `usuario.py`, `estancia.py`).
+  (`auth.py`, `vehiculo.py`, `celda.py`, `usuario.py`, `estancia.py`, `ciclo.py`,
+  `pago.py`, `correo.py`, `aviso.py`). `ciclo.py` concentra el calendario de
+  Bogotá, el anclaje del día de corte, la vigencia y el tope de adelanto;
+  `correo.py` define `ServicioCorreo` y su implementación SMTP; `aviso.py` es el
+  job idempotente de avisos.
 - **Regla de capas:** los routers solo reciben la petición, delegan en un servicio
   de `app/services/` y devuelven la respuesta. Las consultas a la base, los
   `commit`/`rollback` y la traducción de errores no van en los routers.
 - `backend/scripts/cargar_datos_demo.py`: datos de demostración idempotentes (80
-  celdas, 4 cuentas demo y 5 vehículos); no es una migración y solo debe
-  ejecutarse en una base de demostración.
-- `backend/migrations/`: revisiones Alembic `0001` a `0007`; `backend/alembic.ini`
+  celdas, 4 cuentas demo, 5 vehículos y un pago por vehículo); no es una
+  migración y solo debe ejecutarse en una base de demostración.
+- `backend/scripts/enviar_avisos.py`: CLI del job de avisos (`--fecha`,
+  `--dry-run`) para programar en el Programador de tareas de Windows.
+- `backend/migrations/`: revisiones Alembic `0001` a `0009`; `backend/alembic.ini`
   reutiliza la configuración privada.
 - `backend/.env.example`: plantilla pública; conservar cualquier `.env` existente y privado.
 - `backend/requirements.txt`: dependencias de ejecución y pruebas con versiones
@@ -56,13 +63,18 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
   del mismo tipo; registra el movimiento en el historial.
 - `frontend/src/app/historial/`: consulta paginada de cambios de celda con fecha/hora
   (Bogotá), placa, celda anterior, celda nueva y usuario.
+- `frontend/src/app/pagos/`: registro de mensualidad, historial por placa y
+  anulación con motivo; acepta `?placa=...` para llegar desde entrada o vehículos.
 - `frontend/src/app/vehiculos/`: formulario reactivo y listado paginado de vehículos.
+  No digita vencimiento: muestra `mensualidad` y `fecha_vencimiento` derivados.
 - `frontend/src/app/celdas/`: mantenimiento de celdas (habilitar / poner en
   mantenimiento); solo administradores.
 - `frontend/src/app/usuarios/`: administración de cuentas de operador (crear,
   editar, activar/desactivar, restablecer contraseña); solo administradores.
 - `frontend/src/app/services/`: `ApiService`, `AuthService`, `CeldasService`,
-  `EstanciasService`, `SesionUsuario` y `UsuariosService`.
+  `EstanciasService`, `SesionUsuario`, `UsuariosService` y `PagosService`.
+- `frontend/src/app/models/`: contratos TypeScript por recurso, incluido
+  `pago.ts` con el catálogo de motivos de anulación.
 - `frontend/src/app/interceptors/auth.interceptor.ts`: inyecta el token JWT
   `Bearer` en cada petición saliente y limpia la sesión ante HTTP 401.
 - `frontend/src/app/utils/`: `fechas.ts` (hora de Bogotá) y `mensajes.ts`
@@ -105,7 +117,7 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
 - Mantener `/health` independiente de PostgreSQL. No conectar ni crear tablas al
   importar módulos. No registrar credenciales, URL de conexión ni errores crudos.
 - El proxy de desarrollo en `frontend/proxy.conf.json` dirige `/auth`, `/health`,
-  `/vehiculos`, `/celdas`, `/usuarios` y `/estancias` a `127.0.0.1:8000`.
+  `/vehiculos`, `/celdas`, `/usuarios`, `/estancias` y `/pagos` a `127.0.0.1:8000`.
 - Las pantallas internas están protegidas por `sesionActiva`; la sesión guarda
   token y usuario en `sessionStorage` (`parkeo.sesion`).
 - El presupuesto de estilos por componente (`anyComponentStyle`) en Angular es
@@ -117,7 +129,11 @@ instalar y ejecutar los proyectos en Windows está en `README.md`.
   pruebas, documentación o commits.
 - Las contraseñas demo documentadas (`Parkeo2026*`) son exclusivas para entornos
   locales de desarrollo y pruebas.
-- Usar variables de entorno para configuración privada (`.env`).
+- Usar variables de entorno para configuración privada (`.env`). La sección de
+  correo de `backend/.env` usa `SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS`,
+  `SMTP_USUARIO`, `SMTP_PASSWORD`, `SMTP_REMITENTE` y `SMTP_NOMBRE`. Para Gmail,
+  `SMTP_PASSWORD` es una contraseña de aplicación: nunca la contraseña de la
+  cuenta, nunca en código, pruebas, documentación ni video.
 - No colocar secretos en el frontend: su código compilado es público.
 
 ## Comandos de verificación (PowerShell)

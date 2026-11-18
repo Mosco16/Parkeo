@@ -27,7 +27,8 @@ Acceso: <http://127.0.0.1:4200>.
 | `/salida` | Salida | Autenticado | Cierre de estancias abiertas en hora del servidor |
 | `/cambiar-celda` | Cambiar celda | Autenticado | Reubicación de estancias activas a celdas disponibles del mismo tipo |
 | `/historial` | Historial | Autenticado | Consulta paginada y auditable de los movimientos de cambio de celda |
-| `/gestion/vehiculos` | Vehículos | Autenticado | CRUD de vehículos con control de mensualidad |
+| `/pagos` | Pagos | Autenticado | Registro de mensualidad, historial por placa y anulación con motivo; acepta `?placa=...` |
+| `/gestion/vehiculos` | Vehículos | Autenticado | CRUD de vehículos con correo y mensualidad derivada de los pagos |
 | `/gestion/celdas` | Celdas | Solo Administrador | Mantenimiento de celdas (activación y puesta en mantenimiento) |
 | `/gestion/usuarios` | Usuarios | Solo Administrador | Administración de cuentas de operador, estados y reseteo de contraseñas |
 
@@ -45,6 +46,7 @@ El archivo `proxy.conf.json` redirige las peticiones locales a la API de FastAPI
 - `/usuarios/**`
 - `/celdas/**`
 - `/vehiculos/**`
+- `/pagos/**`
 - `/health`
 
 ## Compilación y pruebas

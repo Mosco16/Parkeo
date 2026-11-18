@@ -21,8 +21,10 @@ El historial detallado de cada entrega está en [docs/historial.md](docs/histori
 
 - **Autenticación y roles:** Inicio de sesión con JWT HS256 y contraseñas hasheadas con bcrypt (costo 12). Cuentas diferenciadas por rol (`ADMINISTRADOR` para gestión de usuarios y mantenimiento de celdas; `OPERADOR` para la operación diaria).
 - **Panel de resumen (Dashboard):** KPIs de ocupación en tiempo real (celdas ocupadas, disponibles, en mantenimiento y total), porcentaje de ocupación, mapa interactivo agrupado por tipo de vehículo (`AUTOMOVIL` y `MOTO`) con visualización de placas en celdas ocupadas, accesos directos rápidos y monitoreo de salud de la API.
-- **Gestión de vehículos:** Registro y consulta de vehículos con placa, marca, modelo, color, tipo (`AUTOMOVIL`, `CAMIONETA`, `MOTO`) y fecha de vencimiento de la mensualidad.
-- **Control de accesos (Entrada):** Consulta de estado por placa y confirmación de entrada. El sistema asigna automáticamente la primera celda libre del tipo correspondiente; no permite ingresar vehículos con mensualidad vencida ni duplicar estancias abiertas.
+- **Gestión de vehículos:** Registro y consulta de vehículos con placa, marca, modelo, color, tipo (`AUTOMOVIL`, `CAMIONETA`, `MOTO`) y correo opcional para avisos. El vencimiento de la mensualidad ya no se digita: se deriva de los pagos activos.
+- **Pagos de mensualidad:** Registro de pagos con valor y ciclo calculados por el servidor, referencia única entre pagos activos, tope de un ciclo por adelantado, anulación con motivo del catálogo y vencimiento recalculado a partir de los pagos restantes. Historial paginado por placa en `/pagos`.
+- **Avisos por correo:** Aviso de vencimiento dos días antes, HTML con el logo de Parkeo incrustado y texto plano. Se envía una sola vez por ciclo, se registra cada resultado (`ENVIADO`/`FALLIDO`) y solo se envía a vehículos con correo y autorización. El job es idempotente y se programa con el Programador de tareas de Windows.
+- **Control de accesos (Entrada):** Consulta de estado por placa y confirmación de entrada. El sistema asigna automáticamente la primera celda libre del tipo correspondiente; no permite ingresar vehículos con mensualidad vencida ni duplicar estancias abiertas. Cuando la mensualidad está vencida, ofrece un acceso directo para registrar el pago.
 - **Salida vehicular:** Consulta y registro de salida con cierre de estancia en la hora exacta del servidor.
 - **Cambio de celda con historial auditable:** Reubicación de estancias activas hacia celdas libres del mismo tipo. Cada movimiento se registra de forma inmutable en la tabla `cambio_celda` guardando fecha/hora (hora de Bogotá), placa, celda origen, celda destino y usuario responsable.
 - **Consulta de historial:** Pantalla dedicada `/historial` con paginación de los movimientos de celda ordenados del más reciente al más antiguo.
@@ -64,6 +66,13 @@ Edita `backend/.env` con las credenciales de tu PostgreSQL local (`DB_HOST`, `DB
 .\.venv\Scripts\python.exe .\check_db.py
 ```
 
+Para los avisos por correo, completa además `SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS`
+(`inicio` = STARTTLS, `ssl`, `ninguno`), `SMTP_USUARIO`, `SMTP_PASSWORD`,
+`SMTP_REMITENTE` y `SMTP_NOMBRE`. Con Gmail usa una contraseña de aplicación,
+no la contraseña de la cuenta. Sin estas variables el sistema sigue funcionando
+y el job de avisos informa que falta configurar el correo. Nunca subas
+`backend/.env` al repositorio.
+
 ### 3. Frontend
 
 ```powershell
@@ -75,7 +84,7 @@ npm.cmd ci
 
 ## Base de datos y migraciones
 
-Aplica las migraciones de Alembic (`0001` a `0007`) para crear y estructurar las tablas:
+Aplica las migraciones de Alembic (`0001` a `0009`) para crear y estructurar las tablas. La `0008_pago` crea `pago` con el índice único parcial de referencia activa; la `0009_aviso_correo` crea `aviso`, agrega los campos de correo y autorización a `vehiculo` y elimina `vehiculo.fecha_vencimiento`:
 
 ```powershell
 Set-Location -LiteralPath '..\backend'
@@ -84,11 +93,35 @@ Set-Location -LiteralPath '..\backend'
 
 ### Cargar datos de demostración
 
-El script `cargar_datos_demo.py` es idempotente y carga 80 celdas (A1–A70 `AUTO`, M1–M10 `MOTO`), 4 cuentas de usuario demostrativas y 5 vehículos con vencimientos relativos a hoy:
+El script `cargar_datos_demo.py` es idempotente y carga 80 celdas (A1–A70 `AUTO`, M1–M10 `MOTO`), 4 cuentas de usuario demostrativas y 5 vehículos con pagos relativos a hoy: `ABC123` vigente, `DEF456` con vencimiento en dos días (dispara el aviso), `GHI12J` vencida, `DEMO01` que vence hoy y `DEMO02` vigente con holgura. Los vencimientos se derivan de esos pagos:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\cargar_datos_demo.py
 ```
+
+### Avisos de vencimiento
+
+El job se ejecuta con `scripts/enviar_avisos.py`. Usa `--dry-run` para listar los
+avisos pendientes sin enviar correos ni registrar nada, y `--fecha` para fijar la
+fecha de referencia en hora de Bogotá (`AAAA-MM-DD`):
+
+```powershell
+.\.venv\Scripts\python.exe scripts\enviar_avisos.py --dry-run
+.\.venv\Scripts\python.exe scripts\enviar_avisos.py --fecha 2026-11-20
+```
+
+Para diario, registra una tarea en el Programador de tareas de Windows con este
+programa y argumentos (ajusta la ruta a tu instalación):
+
+```text
+Programa: C:\...\Parkeo\backend\.venv\Scripts\python.exe
+Argumentos: C:\...\Parkeo\backend\scripts\enviar_avisos.py
+Iniciar en: C:\...\Parkeo\backend
+```
+
+El job es idempotente: el índice parcial `uq_aviso_enviado` impide un segundo
+aviso `ENVIADO` para el mismo vehículo y vencimiento. Si un envío falla, se
+registra como `FALLIDO` y se puede volver a intentar.
 
 ### Credenciales de demostración
 
