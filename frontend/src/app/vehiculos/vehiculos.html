@@ -175,6 +175,13 @@
                   }}</small>
                 </td>
                 <td class="row-actions">
+                  <a
+                    class="pay-link"
+                    routerLink="/pagos"
+                    [queryParams]="{ placa: vehicle.placa }"
+                    [attr.aria-label]="'Pagos de ' + vehicle.placa"
+                    >Pagos</a
+                  >
                   <button
                     type="button"
                     (click)="edit(vehicle)"

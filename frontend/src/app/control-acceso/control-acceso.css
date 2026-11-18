@@ -308,3 +308,17 @@ thead th {
   flex-wrap: wrap;
   gap: 10px;
 }
+
+.primary-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 9px 13px;
+  border-radius: 8px;
+  background: #0e2a47;
+  color: #fff;
+  font-size: 14px;
+  text-decoration: none;
+}
+.primary-link:hover {
+  filter: brightness(0.92);
+}

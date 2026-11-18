@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { Pago } from '../models/pago';
 import { Pagos } from './pagos';
 
@@ -31,7 +32,7 @@ describe('Gestión de pagos', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Pagos],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(Pagos);
@@ -133,5 +134,35 @@ describe('Gestión de pagos', () => {
 
     expect(component.errorAnulacion()).toBe('Solo se puede anular el último pago activo.');
     expect(component.anulando()).toBe(5);
+  });
+});
+
+describe('Pagos desde una placa externa', () => {
+  it('prellena la placa de la URL y consulta su historial', async () => {
+    await TestBed.configureTestingModule({
+      imports: [Pagos],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({ placa: 'abc123' }) } },
+        },
+      ],
+    }).compileComponents();
+    const http = TestBed.inject(HttpTestingController);
+    const c = TestBed.createComponent(Pagos).componentInstance;
+
+    expect(c.form.controls.placa.value).toBe('ABC123');
+    expect(c.consulta.controls.placa.value).toBe('ABC123');
+    http.expectOne('/pagos?placa=ABC123&pagina=1&tamano=10').flush({
+      items: [],
+      total: 0,
+      pagina: 1,
+      tamano: 10,
+    });
+    expect(c.buscado()).toBe(true);
+    http.verify();
   });
 });

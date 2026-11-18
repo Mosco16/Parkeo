@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import {
   ErrorApi,
@@ -26,7 +27,7 @@ type Field = keyof VehiculoCrear;
 
 @Component({
   selector: 'app-vehiculos',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './vehiculos.html',
   styleUrl: './vehiculos.css',
 })

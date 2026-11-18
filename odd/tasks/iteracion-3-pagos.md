@@ -116,7 +116,7 @@ idempotente y suma pagos de ejemplo: ABC123 vigente y DEF456 por vencer a dos d�
 | T5 | Ajuste de entrada y contrato de vehículos | S11, S12 | inline | hecho |
 | T6 | Correo con logo, job de avisos y registro | S10 | inline | hecho |
 | T7 | Frontend: registrar pago, anular, historial | S12 | delegated | hecho |
-| T8 | Frontend: integración en entrada y vehículos | S12 | delegated | pendiente |
+| T8 | Frontend: integración en entrada y vehículos | S12 | delegated | hecho |
 | T9 | Datos demo, documentación y evidencias | S14 | inline | pendiente |
 
 ---
@@ -171,3 +171,9 @@ aplicación no está disponible.
 por placa y anulación con motivo del catálogo. `PagosService` y `models/pago.ts`
 nuevos; ruta protegida, enlace en la navegación y proxy `/pagos`. 6 pruebas nuevas
 sin base: `85 passed` en frontend y build correcto.
+
+**L10 (18/11/2026).** T8 completa: al consultar una placa con la mensualidad
+vencida, registrar entrada ofrece «Registrar pago de esta placa»; el listado de
+vehículos tiene acceso «Pagos» por fila. `/pagos?placa=...` prellena placa y
+carga el historial de esa placa. Se agregó `provideRouter([])` a las specs
+afectadas. Frontend `86 passed` y build sin advertencias de presupuesto.

@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MOTIVOS_ANULACION, MotivoAnulacion, Pago, PagoCrear } from '../models/pago';
 import { PagosService } from '../services/pagos.service';
 import { fechaBogota, fechaHoraBogota } from '../utils/fechas';
@@ -26,6 +27,7 @@ export class Pagos {
   private readonly api = inject(PagosService);
   private readonly fb = inject(FormBuilder);
   private readonly destroy = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
 
   readonly motivos = MOTIVOS_ANULACION;
   readonly form = this.fb.nonNullable.group({
@@ -54,6 +56,16 @@ export class Pagos {
   readonly motivo = signal<MotivoAnulacion>(MOTIVOS_ANULACION[0]);
   readonly anulandoBusy = signal(false);
   readonly errorAnulacion = signal('');
+
+  constructor() {
+    const inicial = this.route.snapshot.queryParamMap.get('placa');
+    if (inicial) {
+      const placa = normalizarPlaca(inicial);
+      this.form.controls.placa.setValue(placa, { emitEvent: false });
+      this.consulta.controls.placa.setValue(placa, { emitEvent: false });
+      this.buscar(1);
+    }
+  }
 
   registrar(): void {
     if (this.saving()) return;

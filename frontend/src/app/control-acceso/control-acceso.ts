@@ -1,7 +1,7 @@
 ﻿import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EstadoVehiculo } from '../models/estancia';
 import { EstanciasService } from '../services/estancias.service';
 import { SesionUsuario } from '../services/sesion-usuario.service';
@@ -14,7 +14,7 @@ const placa = (value: string) => value.trim().toUpperCase();
 
 @Component({
   selector: 'app-control-acceso',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './control-acceso.html',
   styleUrl: './control-acceso.css',
 })

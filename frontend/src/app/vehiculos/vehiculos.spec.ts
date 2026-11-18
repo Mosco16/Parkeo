@@ -1,6 +1,7 @@
 ﻿import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Vehiculos } from './vehiculos';
 import { Vehiculo } from '../models/vehiculo';
 
@@ -59,7 +60,7 @@ describe('Gestión de vehículos', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Vehiculos],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(Vehiculos);

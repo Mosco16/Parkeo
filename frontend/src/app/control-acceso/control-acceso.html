@@ -106,6 +106,12 @@
           Pago pendiente: la mensualidad está vencida.
           <span>Vence {{ vence(state.vehiculo.fecha_vencimiento) }}.</span>
         </p>
+        <a
+          class="primary-link"
+          routerLink="/pagos"
+          [queryParams]="{ placa: state.vehiculo.placa }"
+          >Registrar pago de esta placa</a
+        >
       } @else if (!state.celda_sugerida) {
         <p class="notice error" role="alert">No hay celdas libres para este tipo de vehículo.</p>
       } @else {
