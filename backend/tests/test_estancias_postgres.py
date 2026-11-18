@@ -111,8 +111,10 @@ def test_recorrido_y_rechazos_sin_cambios_parciales(datos):
             assert saved.salida == datetime.fromisoformat(closed.json()['salida'])
         assert client.post('/estancias/entrada', json=entrada(d, v=1)).status_code == 201
         assert cantidad(d) == 2
-        for route in ('/health', '/vehiculos?limit=1', '/celdas?limit=1', '/usuarios?limit=1'):
+        for route in ('/health', '/vehiculos?limit=1', '/celdas?limit=1'):
             assert client.get(route).status_code == 200
+        # La gestión de usuarios es exclusiva de ADMINISTRADOR (RN-USU-01).
+        assert client.get('/usuarios?limit=1').status_code == 403
 
 
 @pytest.mark.parametrize('caso', ['vehiculo', 'salida'])

@@ -237,8 +237,11 @@ def test_e13_salida_con_mensualidad_vencida_no_se_bloquea(datos):
                     Pago.anulacion_fecha_hora.is_(None),
                 )
             )
-            # Mueve el vencimiento derivado al pasado: ya está VENCIDA.
-            pago.vencimiento_ciclo = date.today() - timedelta(days=1)
+            # Mueve el ciclo completo al pasado: ya está VENCIDA. El inicio
+            # también se desplaza para conservar inicio_ciclo < vencimiento_ciclo.
+            desplazamiento = timedelta(days=40)
+            pago.inicio_ciclo -= desplazamiento
+            pago.vencimiento_ciclo -= desplazamiento
         assert estado(d)['mensualidad'] == 'VENCIDA'
 
         salida = client.post('/estancias/salida', json=entrada(d))

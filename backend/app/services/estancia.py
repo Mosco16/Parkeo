@@ -162,8 +162,14 @@ class ServicioEstancia:
         )
         if estancia is None:
             raise EstanciaError(409, "El vehículo no tiene una entrada abierta.")
+        # El usuario de la petición puede venir desadjunto (o de un override de
+        # dependencia). Adjuntar ese objeto a la relación `usuario_salida`
+        # provocaría un INSERT duplicado; se usa siempre la entidad de la sesión.
+        gestor = self.session.get(Usuario, usuario.id)
+        if gestor is None:
+            raise EstanciaError(404, "El usuario de la operación ya no existe.")
         try:
-            estancia.cerrar(datetime.now(timezone.utc), usuario)
+            estancia.cerrar(datetime.now(timezone.utc), gestor)
         except ValueError:
             raise EstanciaError(409, "No se puede cerrar la estancia con su estado o fecha actuales.") from None
         self.session.flush()

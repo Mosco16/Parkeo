@@ -206,3 +206,22 @@ connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine» y no ha
 escucha en 5432. Por eso las 26 pruebas de integración siguen saltadas; no es
 necesario instalar PostgreSQL. Pendiente: levantar Docker Desktop/contenedor y
 recién entonces aplicar `0008`/`0009` y correr `RUN_POSTGRES_TESTS=1`.
+
+**L14 (18/11/2026).** El usuario autorizó levantar Docker. Se inició Docker
+Desktop (daemon 29.9.2) y el contenedor `autos-colombia-db` (`postgres:17`,
+5432 mapeado, volumen `autos_colombia_pgdata`). `check_db.py` dio `SELECT 1`
+correcto y `alembic current` estaba en `0007`. Antes de migrar se guardó un
+respaldo lógico en `C:\Users\Control\AppData\Local\Temp\opencode\parkeo-backup-0007.dump`
+(20.354 bytes). `alembic upgrade head` dejó la base en `0009 (head)`.
+
+Con `RUN_POSTGRES_TESTS=1` aparecieron 9 fallos que antes estaban ocultos:
+1) `cerrar()` asignaba un `Usuario` transitorio de los overrides de prueba y el
+flush intentaba reinsertarlo (503); se corrigió en `ServicioEstancia.salida`
+cargando la entidad persistida por id. 2) Un fixture movía solo
+`vencimiento_ciclo` al pasado y rompía `ck_pago_ciclo_orden`; ahora desplaza el
+ciclo completo. 3) `/usuarios` es exclusivo de administrador y el test esperaba
+200 para un operador; se ajustó a 403. 4) El correo se normaliza a minúsculas y
+el test esperaba el original; se ajustó. Resultado final: **303 passed, 0
+skipped** con integración y `277 passed, 26 skipped` sin ella; `pip check`
+limpio. Docker Desktop se cayó una vez durante la verificación y se reinició;
+se eliminaron las filas `DIAG-*` creadas por el script de diagnóstico.

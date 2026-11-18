@@ -56,7 +56,9 @@ def test_crud_and_errors_in_postgres(client):
     assert vehicle["modelo"] == 2025
     # El vencimiento ya no se escribe a mano (RN-VIG-01): sin pagos es nulo.
     assert vehicle["fecha_vencimiento"] is None
-    assert vehicle["correo"] == payload["correo"] and vehicle["avisos_autorizados"] is False
+    # El contrato normaliza el correo a minúsculas (sección 4).
+    assert vehicle["correo"] == payload["correo"].lower()
+    assert vehicle["avisos_autorizados"] is False
     assert client.get(f"/vehiculos/{first_id}").json() == vehicle
     assert client.post("/vehiculos", json={**payload, "fecha_vencimiento": "2027-01-31"}).status_code == 422
     assert client.post("/vehiculos", json=payload).status_code == 409
