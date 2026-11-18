@@ -115,7 +115,7 @@ idempotente y suma pagos de ejemplo: ABC123 vigente y DEF456 por vencer a dos d�
 | T4 | Schemas y router `/pagos` + pruebas de API | S5, S9 | inline | hecho |
 | T5 | Ajuste de entrada y contrato de vehículos | S11, S12 | inline | hecho |
 | T6 | Correo con logo, job de avisos y registro | S10 | inline | hecho |
-| T7 | Frontend: registrar pago, anular, historial | S12 | delegated | pendiente |
+| T7 | Frontend: registrar pago, anular, historial | S12 | delegated | hecho |
 | T8 | Frontend: integración en entrada y vehículos | S12 | delegated | pendiente |
 | T9 | Datos demo, documentación y evidencias | S14 | inline | pendiente |
 
@@ -165,3 +165,9 @@ cubre el MIME y el job con dobles, sin SMTP ni base. `.env.example` documenta
 Backend `277 passed, 26 skipped` y `pip check` limpio. El envío real sigue
 pendiente: `backend/.env` no tiene las variables SMTP y la contraseña de
 aplicación no está disponible.
+
+**L9 (18/11/2026).** T7 completa: pantalla `/pagos` con formulario de registro
+(placa, referencia, correo opcional y autorización de avisos), historial paginado
+por placa y anulación con motivo del catálogo. `PagosService` y `models/pago.ts`
+nuevos; ruta protegida, enlace en la navegación y proxy `/pagos`. 6 pruebas nuevas
+sin base: `85 passed` en frontend y build correcto.

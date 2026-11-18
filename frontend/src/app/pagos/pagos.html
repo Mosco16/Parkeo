@@ -1,0 +1,194 @@
+<section class="payments" aria-labelledby="payments-title">
+  <header class="heading">
+    <div>
+      <span class="eyebrow">MENSUALIDADES</span>
+      <h1 id="payments-title">Pagos</h1>
+      <p>Registra la mensualidad, consulta el historial por placa y anula un pago con motivo.</p>
+    </div>
+  </header>
+
+  @if (ultimoPago(); as pago) {
+    <p class="notice success" role="status">
+      Pago registrado para {{ pago.placa }}: ciclo hasta {{ fecha(pago.vencimiento_ciclo) }}.
+    </p>
+  }
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="register-title">
+      <h2 id="register-title">Registrar pago</h2>
+      <p class="hint">El valor y el ciclo los calcula el servidor (RN-PAG-05).</p>
+
+      <form [formGroup]="form" (ngSubmit)="registrar()" novalidate>
+        <div class="field">
+          <label for="pago_placa">Placa</label>
+          <input
+            id="pago_placa"
+            formControlName="placa"
+            autocomplete="off"
+            autocapitalize="characters"
+            [attr.aria-invalid]="!!errorCampo('placa')"
+          />
+          <span class="field-error">{{ errorCampo('placa') }}</span>
+        </div>
+
+        <div class="field">
+          <label for="pago_referencia">Referencia del recibo</label>
+          <input
+            id="pago_referencia"
+            formControlName="referencia"
+            autocomplete="off"
+            [attr.aria-invalid]="!!errorCampo('referencia')"
+          />
+          <span class="field-error">{{ errorCampo('referencia') }}</span>
+        </div>
+
+        <div class="field">
+          <label for="pago_correo">Correo para avisos (opcional)</label>
+          <input
+            id="pago_correo"
+            type="email"
+            formControlName="correo"
+            autocomplete="off"
+            [attr.aria-invalid]="!!errorCampo('correo')"
+          />
+          <span class="field-error">{{ errorCampo('correo') }}</span>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" formControlName="autorizar_avisos" />
+          <span>Autorizar avisos de vencimiento por correo</span>
+        </label>
+
+        @if (errorPago()) {
+          <p class="notice error" role="alert">{{ errorPago() }}</p>
+        }
+
+        <button type="submit" [disabled]="saving()">
+          {{ saving() ? 'Registrando…' : 'Registrar pago' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="history-title" [attr.aria-busy]="loading()">
+      <h2 id="history-title">Historial por placa</h2>
+
+      <form class="search" [formGroup]="consulta" (ngSubmit)="buscar(1)">
+        <div class="field">
+          <label for="pago_placa_consulta">Placa</label>
+          <input
+            id="pago_placa_consulta"
+            formControlName="placa"
+            autocomplete="off"
+            autocapitalize="characters"
+          />
+        </div>
+        <button type="submit" [disabled]="loading()">Consultar</button>
+      </form>
+
+      @if (loading()) {
+        <p class="empty" role="status">Cargando pagos…</p>
+      } @else if (errorHistorial()) {
+        <div class="empty">
+          <p class="notice error" role="alert">{{ errorHistorial() }}</p>
+        </div>
+      } @else if (!items().length) {
+        <div class="empty">
+          <h3>{{ buscado() ? 'No hay pagos para esta placa' : 'Consulta una placa' }}</h3>
+          <p>Los pagos registrados aparecerán aquí con su ciclo y su estado.</p>
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <caption class="sr-only">Pagos de la placa consultada</caption>
+            <thead>
+              <tr>
+                <th scope="col">Fecha y hora</th>
+                <th scope="col">Referencia</th>
+                <th scope="col">Valor</th>
+                <th scope="col">Ciclo</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Usuario</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pago of items(); track pago.id) {
+                <tr>
+                  <td>{{ fechaHora(pago.fecha_hora) }}</td>
+                  <th scope="row">{{ pago.referencia }}</th>
+                  <td>{{ valor(pago.valor) }}</td>
+                  <td>
+                    {{ fecha(pago.inicio_ciclo) }} → {{ fecha(pago.vencimiento_ciclo) }}
+                  </td>
+                  <td>
+                    <span class="state" [class.cancelled]="pago.estado === 'ANULADO'">
+                      {{ pago.estado }}
+                    </span>
+                    @if (pago.motivo_anulacion) {
+                      <small class="reason">{{ pago.motivo_anulacion }}</small>
+                    }
+                  </td>
+                  <td>{{ pago.usuario }}</td>
+                  <td class="row-actions">
+                    @if (pago.estado === 'ACTIVO') {
+                      <button
+                        type="button"
+                        (click)="preguntarAnulacion(pago)"
+                        [disabled]="anulandoBusy()"
+                      >
+                        Anular
+                      </button>
+                    }
+                  </td>
+                </tr>
+                @if (anulando() === pago.id) {
+                  <tr class="cancel-row">
+                    <td colspan="7">
+                      <div class="cancel-form">
+                        <label [for]="'motivo_' + pago.id">Motivo de anulación</label>
+                        <select
+                          [id]="'motivo_' + pago.id"
+                          [value]="motivo()"
+                          (change)="onMotivo($event)"
+                        >
+                          @for (motivo of motivos; track motivo) {
+                            <option [value]="motivo">{{ motivo }}</option>
+                          }
+                        </select>
+                        <button type="button" (click)="confirmarAnulacion()" [disabled]="anulandoBusy()">
+                          {{ anulandoBusy() ? 'Anulando…' : 'Confirmar anulación' }}
+                        </button>
+                        <button type="button" (click)="cancelarAnulacion()" [disabled]="anulandoBusy()">
+                          Cancelar
+                        </button>
+                      </div>
+                      @if (errorAnulacion()) {
+                        <p class="notice error" role="alert">{{ errorAnulacion() }}</p>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="pagination" aria-label="Paginación de pagos">
+          <span>Página {{ pagina() }} de {{ paginas() }} · {{ total() }} pagos</span>
+          <div class="actions">
+            <button type="button" (click)="buscar(pagina() - 1)" [disabled]="loading() || pagina() === 1">
+              Anterior
+            </button>
+            <button
+              type="button"
+              (click)="buscar(pagina() + 1)"
+              [disabled]="loading() || pagina() >= paginas()"
+            >
+              Siguiente
+            </button>
+          </div>
+        </nav>
+      }
+    </section>
+  </div>
+</section>

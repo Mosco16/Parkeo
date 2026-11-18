@@ -39,6 +39,12 @@ export const routes: Routes = [
     loadComponent: () => import('./historial/historial').then((m) => m.Historial),
   },
   {
+    path: 'pagos',
+    title: 'Pagos | Parkeo',
+    canActivate: [sesionActiva],
+    loadComponent: () => import('./pagos/pagos').then((m) => m.Pagos),
+  },
+  {
     path: 'gestion/celdas',
     title: 'Celdas | Parkeo',
     canActivate: [sesionActiva, soloAdministrador],
