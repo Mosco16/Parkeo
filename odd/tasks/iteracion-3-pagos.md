@@ -225,3 +225,14 @@ el test esperaba el original; se ajustó. Resultado final: **303 passed, 0
 skipped** con integración y `277 passed, 26 skipped` sin ella; `pip check`
 limpio. Docker Desktop se cayó una vez durante la verificación y se reinició;
 se eliminaron las filas `DIAG-*` creadas por el script de diagnóstico.
+
+**L15 (18/11/2026).** El usuario cargó las variables `SMTP_*` en `backend/.env`
+(sin versionar) y pidió probar el correo en la dirección que indicó. Se cargaron
+los datos demo (5 pagos nuevos) y se apuntó el vehículo `DEF456` —vencimiento
+derivado `2026-11-20`— a ese correo con avisos autorizados. `--dry-run` listó 1
+candidato. El envío real devolvió `Enviados: 1, Fallidos: 0, Omitidos: 0`; la
+tabla `aviso` registró `ENVIADO` para `DEF456` con `fecha_vencimiento=2026-11-20`
+y sin detalle de error. Una segunda ejecución omitió el ciclo ya avisado y el
+dry-run posterior mostró 0 pendientes y 1 ya avisado: el dedupe funciona.
+Recordatorio: la contraseña de aplicación que circuló por el chat debe revocarse
+después de la demostración.
