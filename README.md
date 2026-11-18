@@ -38,7 +38,7 @@ El historial detallado de cada entrega está en [docs/historial.md](docs/histori
 - Sistema operativo Windows con **PowerShell**.
 - **Python 3.13** (probado con 3.13.16).
 - **Node.js 24** (mínimo 24.15.0) y **npm 11**.
-- **PostgreSQL 17** con una base de datos creada (por defecto `autos_colombia`).
+- **PostgreSQL 17** con una base de datos creada (por defecto `autos_colombia`). En este entorno se usa un contenedor **Docker local** con el puerto 5432 mapeado a `127.0.0.1`; levanta Docker Desktop y el contenedor antes de aplicar migraciones o correr las pruebas de integración.
 
 ---
 

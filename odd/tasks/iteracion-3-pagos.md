@@ -142,12 +142,13 @@ creada desde `6974b55`.
 `855fc8b` (ciclo y vigencia), `6c017a4` (servicio de pagos) y T4 (router y
 pruebas de API). Backend en `258 passed, 26 skipped`.
 
-**L6 (18/11/2026).** PostgreSQL no está instalado en esta máquina: no hay
-servicio, binarios ni puerto 5432 escuchando. `alembic upgrade head` y
-`check_db.py` fallan por conexión, así que `0008`/`0009` quedan sin aplicar y las
-26 pruebas de integración siguen saltadas. Las migraciones se validaron en modo
-SQL offline (`0007:0008` y `0008:0009`). Para validar en PostgreSQL real se
-necesita la base en otra máquina o instalar PostgreSQL localmente.
+**L6 (18/11/2026).** Corrección (ver L13): la base del proyecto es PostgreSQL
+en un contenedor Docker local, no una instalación de sistema. En ese momento
+Docker Desktop estaba apagado: no había escucha en 5432, `docker ps` no podía
+conectar con el daemon y no había binarios de PostgreSQL en el PATH, por lo que
+`alembic upgrade head` y `check_db.py` fallaron por conexión. `0008`/`0009`
+quedaron sin aplicar y las 26 pruebas de integración siguen saltadas. Las
+migraciones se validaron en modo SQL offline (`0007:0008` y `0008:0009`).
 
 **L7 (18/11/2026).** T5 completa: `VehiculoRespuesta` expone `mensualidad`
 derivada, la entrada se bloquea con la mensualidad vencida (pruebas nuevas sin
@@ -186,9 +187,22 @@ variables `SMTP_*`, el CLI `enviar_avisos.py` y la ruta `/pagos` en `README.md`,
 `277 passed, 26 skipped`, `pip check` limpio, migraciones válidas en modo SQL
 offline; frontend `86 passed` y build correcto. Pendiente para la demo: cargar
 las variables SMTP en `backend/.env`, aplicar `0008`/`0009` en PostgreSQL y
-revocar la contraseña de aplicación que se pegó en el chat.
+revocar la contraseña de aplicación que se pegó en el chat. Corregido en L13:
+el pendiente de PostgreSQL es levantar el contenedor Docker local, no instalar
+PostgreSQL.
 
 **L12 (18/11/2026).** Revisión nativa: `gentle-ai review assess` con base
 `6974b55` y `--committed-only` devolvió `risk: medium`, `review_due: false`,
 `review_due_reason: under_budget`. Sin transacción de revisión ni consentimiento
 pendiente.
+
+**L13 (18/11/2026).** El usuario corrige el diagnóstico de L6: el proyecto usa
+PostgreSQL en un contenedor **Docker local**. Evidencia observable ahora: Docker
+CLI instalado en `C:\Program Files\Docker\Docker\resources\bin\docker.exe`,
+`backend/.env` con `DB_HOST=127.0.0.1` y `DB_PORT=5432` (coherente con un puerto
+mapeado a un contenedor), sin archivos compose versionados en el repo. En esta
+sesión Docker Desktop no está corriendo: `docker ps` falla con «failed to
+connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine» y no hay
+escucha en 5432. Por eso las 26 pruebas de integración siguen saltadas; no es
+necesario instalar PostgreSQL. Pendiente: levantar Docker Desktop/contenedor y
+recién entonces aplicar `0008`/`0009` y correr `RUN_POSTGRES_TESTS=1`.
