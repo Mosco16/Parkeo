@@ -381,11 +381,12 @@ class Pago(Base):
             raise ValueError("El motivo de anulación no pertenece al catálogo.")
         return value
 
+    @property
     def estado(self) -> str:
         return "ANULADO" if self.anulacion_fecha_hora is not None else "ACTIVO"
 
     def anular(self, fecha_hora: datetime, usuario: Usuario, motivo: str) -> None:
-        if self.estado() == "ANULADO":
+        if self.estado == "ANULADO":
             raise ValueError("El pago ya está anulado.")
         self.anulacion_fecha_hora = fecha_hora
         self.anulacion_usuario_id = usuario.id
