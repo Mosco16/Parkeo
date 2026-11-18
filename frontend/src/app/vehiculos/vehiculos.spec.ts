@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+﻿import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Vehiculos } from './vehiculos';
@@ -15,7 +15,7 @@ describe('Gestión de vehículos', () => {
       marca: 'Prueba',
       modelo: '2025',
       color: 'Azul',
-      fecha_vencimiento: '2027-01-31',
+      correo: ' Dueno@Correo.CO ',
     })) {
       const input = root.querySelector<HTMLInputElement>(`#${field}`)!;
       input.value = value;
@@ -29,7 +29,8 @@ describe('Gestión de vehículos', () => {
       .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     const request = http.expectOne({ method: 'POST', url: '/vehiculos' });
     expect(request.request.body.modelo).toBe(2025);
-    expect(request.request.body.fecha_vencimiento).toBe('2027-01-31');
+    expect(request.request.body.correo).toBe('dueno@correo.co');
+    expect(request.request.body.fecha_vencimiento).toBeUndefined();
     request.flush({ ...vehicle, placa: 'DOM123' });
     flushList([{ ...vehicle, placa: 'DOM123' }]);
   });
@@ -43,7 +44,10 @@ describe('Gestión de vehículos', () => {
     color: 'Azul',
     modelo: 2025,
     tipo: 'MOTO',
+    correo: 'dueno@correo.co',
+    avisos_autorizados: false,
     fecha_vencimiento: '2027-01-31',
+    mensualidad: 'VIGENTE',
   };
   const flushList = (items: Vehiculo[] = [], total = items.length, offset = 0) => {
     http
@@ -84,40 +88,28 @@ describe('Gestión de vehículos', () => {
     component.save();
     expect(component.fieldError('placa')).toContain('obligatorio');
     expect(component.fieldError('modelo')).toContain('entero');
-    expect(component.fieldError('fecha_vencimiento')).toContain('obligatorio');
     http.expectNone((request) => request.method === 'POST');
   });
 
-  it('rechaza una fecha de vencimiento que no existe en el calendario', () => {
+  it('rechaza un correo con formato inválido', () => {
     flushList();
     component.newVehicle();
-    component.form.patchValue({ ...vehicle, fecha_vencimiento: '2027-02-30' });
+    component.form.patchValue({ ...vehicle, correo: 'sin-arroba' });
     component.save();
-    expect(component.fieldError('fecha_vencimiento')).toContain('fecha válida');
+    expect(component.fieldError('correo')).toContain('correo válido');
     http.expectNone((request) => request.method === 'POST');
   });
 
-  it('calcula el vencimiento en hora de Bogotá y muestra la fecha local', () => {
-    flushList();
-    const hoy = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Bogota',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
-    const [anio, mes, dia] = hoy.split('-').map(Number);
-    const siguiente = new Date(anio, mes - 1, dia + 1);
-    const manana = `${siguiente.getFullYear()}-${String(siguiente.getMonth() + 1).padStart(2, '0')}-${String(siguiente.getDate()).padStart(2, '0')}`;
-
-    expect(component.estadoMensualidad(hoy)).toBe('VENCIDA');
-    expect(component.estadoMensualidad(manana)).toBe('VIGENTE');
+  it('muestra la mensualidad derivada y la fecha local', () => {
+    flushList([vehicle]);
+    expect(fixture.nativeElement.textContent).toContain('VIGENTE');
     expect(component.fechaLocal('2027-01-31')).toBe('31/01/2027');
   });
 
   it('crea con placa normalizada, bloquea doble envío y actualiza el listado', () => {
     flushList();
     component.newVehicle();
-    component.form.patchValue({ ...vehicle, placa: ' abc123 ' });
+    component.form.patchValue({ ...vehicle, correo: vehicle.correo ?? '', placa: ' abc123 ' });
     component.save();
     component.save();
     const request = http.expectOne({ method: 'POST', url: '/vehiculos' });
@@ -133,7 +125,7 @@ describe('Gestión de vehículos', () => {
   it('señala placa duplicada y permite corregirla', () => {
     flushList();
     component.newVehicle();
-    component.form.patchValue(vehicle);
+    component.form.patchValue({ ...vehicle, correo: vehicle.correo ?? '' });
     component.save();
     http
       .expectOne('/vehiculos')
@@ -195,7 +187,7 @@ describe('Gestión de vehículos', () => {
   it('asocia los errores 422 a los campos', () => {
     flushList();
     component.newVehicle();
-    component.form.patchValue(vehicle);
+    component.form.patchValue({ ...vehicle, correo: vehicle.correo ?? '' });
     component.save();
     http
       .expectOne('/vehiculos')

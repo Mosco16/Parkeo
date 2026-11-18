@@ -119,7 +119,7 @@ export class RegistrarSalida {
     return fechaHoraBogota(value);
   }
 
-  vence(value: string): string {
+  vence(value: string | null): string {
     return fechaBogota(value);
   }
 }

@@ -11,8 +11,9 @@ export function fechaHoraBogota(valor: string): string {
   );
 }
 
-/** Fecha sin hora (AAAA-MM-DD) en formato local para mostrar. */
-export function fechaBogota(iso: string): string {
+/** Fecha sin hora (AAAA-MM-DD) en formato local para mostrar; ``null`` = sin pagos. */
+export function fechaBogota(iso: string | null): string {
+  if (!iso) return 'sin pagos';
   const [anio, mes, dia] = iso.split('-').map(Number);
   if (!anio || !mes || !dia) return iso;
   return new Date(anio, mes - 1, dia).toLocaleDateString('es-CO', {

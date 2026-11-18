@@ -3,9 +3,10 @@ import re
 from datetime import date
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, field_validator
+from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, computed_field, field_validator
 
 from app.models import required_text
+from app.services.ciclo import estado_mensualidad, hoy_bogota
 
 Texto = Annotated[str, BeforeValidator(lambda value: required_text(value, "El campo"))]
 Placa = Annotated[Texto, AfterValidator(str.upper)]
@@ -72,6 +73,12 @@ class VehiculoRespuesta(BaseModel):
     correo: str | None = None
     avisos_autorizados: bool = False
     fecha_vencimiento: date | None = None
+
+    @computed_field
+    @property
+    def mensualidad(self) -> str:
+        """Derivada del vencimiento vigente, nunca escrita por el cliente (S12)."""
+        return estado_mensualidad(self.fecha_vencimiento, hoy_bogota())
 
 
 class VehiculosPagina(BaseModel):

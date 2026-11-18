@@ -113,7 +113,7 @@ idempotente y suma pagos de ejemplo: ABC123 vigente y DEF456 por vencer a dos d�
 | T2 | Módulo de ciclo y vigencia + pruebas unitarias | S2, S3, S4 | inline | hecho `855fc8b` |
 | T3 | Servicio de pagos (registro, anulación, historial) + pruebas | S5, S6, S7, S8, S9 | inline | hecho `6c017a4` |
 | T4 | Schemas y router `/pagos` + pruebas de API | S5, S9 | inline | hecho |
-| T5 | Ajuste de entrada y contrato de vehículos | S11, S12 | inline | pendiente |
+| T5 | Ajuste de entrada y contrato de vehículos | S11, S12 | inline | hecho |
 | T6 | Correo con logo, job de avisos y registro | S10 | inline | pendiente |
 | T7 | Frontend: registrar pago, anular, historial | S12 | delegated | pendiente |
 | T8 | Frontend: integración en entrada y vehículos | S12 | delegated | pendiente |
@@ -148,3 +148,9 @@ servicio, binarios ni puerto 5432 escuchando. `alembic upgrade head` y
 26 pruebas de integración siguen saltadas. Las migraciones se validaron en modo
 SQL offline (`0007:0008` y `0008:0009`). Para validar en PostgreSQL real se
 necesita la base en otra máquina o instalar PostgreSQL localmente.
+
+**L7 (18/11/2026).** T5 completa: `VehiculoRespuesta` expone `mensualidad`
+derivada, la entrada se bloquea con la mensualidad vencida (pruebas nuevas sin
+base) y el formulario de vehículos pierde el campo manual de vencimiento y gana
+`correo`. Backend `266 passed, 26 skipped`; frontend `79 passed` y build
+correcto.
