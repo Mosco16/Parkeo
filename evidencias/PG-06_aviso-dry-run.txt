@@ -1,0 +1,7 @@
+﻿Fecha de referencia: 2026-11-19
+Vencimientos avisados: 2026-11-21
+Avisos pendientes: 1
+  DEF456 -> <correo-del-cliente>
+Ya avisados para este ciclo: 0
+
+

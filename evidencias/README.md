@@ -1,14 +1,14 @@
-# Evidencias de pruebas manuales — Parkeo (Iteración 2)
+# Evidencias de pruebas manuales — Parkeo (Iteraciones 2 y 3)
 
 Carpeta de evidencias del plan de pruebas manuales de la entrega EA2.
 
 Como requisito para esta entrega, las evidencias están **hospedadas en un repositorio o carpeta accesible para la revisión**, y la plantilla de pruebas lleva el **enlace** a cada una. Por eso la evidencia vive acá y el Excel solo la referencia.
 
-- Plan de pruebas: `Entregable 2/Plan_Pruebas_Usuarios_Celdas_Autos_Colombia.xlsx`
-- Documentación del sistema: `Entregable 2/Parkeo - Documentación del sistema - Iteración 2.docx`
-- Casos: 33 (13 US, 5 PE, 15 CE)
+- Plan de pruebas: `Entregable 2/Plan_Pruebas_Usuarios_Celdas_Parkeo.xlsx` (copia ampliada en `Entregable 3/Plan_Pruebas_Parkeo_Iteracion_3.xlsx`)
+- Documentación del sistema: `Entregable 3/Parkeo - Documentación profesional del sistema.docx`
+- Casos: 39 (13 US, 5 PE, 15 CE y 6 PG)
 - Enlace público de esta carpeta:
-  `https://github.com/Mosco16/Parkeo/tree/iteracion-2-parkeo/evidencias`
+  `https://github.com/Mosco16/Parkeo/tree/main/evidencias`
 
 ## Convención de nombres
 
@@ -18,7 +18,7 @@ Un archivo por caso, con esta forma:
 <ID>_<slug>.png
 ```
 
-- `<ID>` es el identificador del caso en el Excel: `US-01`, `PE-01`, `CE-01`.
+- `<ID>` es el identificador del caso en el Excel: `US-01`, `PE-01`, `CE-01` o `PG-01`.
 - `<slug>` es un resumen corto en minúsculas con guiones, sin acentos ni espacios.
 - Si un caso necesita más de una captura, cada archivo lleva un slug distinto que describa su parte del caso: `US-10_obligatorios-vacios.png`, `US-10_contrasena-corta.png`.
 - Formato **PNG**. No se usó JPEG, dado que el texto de los mensajes de error se degrada y deja de ser legible.
@@ -62,6 +62,14 @@ El prefijo `ID_` no es decorativo: permite ordenar la carpeta alfabéticamente y
 | CE-13 | `CE-13_cambiar-celda.png` | Celda anterior, celda nueva y registro en el historial. |
 | CE-14 | `CE-14_cambio-celda-invalido-409.png` | Mensaje «La celda no está disponible o es de otro tipo.» |
 | CE-15 | `CE-15_historial-cambios.png` | Tabla paginada con placa, celdas y usuario. |
+| PG-01 | `PG-01_registro-pago.png` | Aviso «Pago registrado para ABC123» y fila nueva con ciclo calculado. |
+| PG-02 | `PG-02_referencia-duplicada-409.png` | Mensaje 409 por referencia repetida en un pago activo. |
+| PG-03 | `PG-03_anulacion-motivo.png` | Fila ANULADO con motivo «Pago duplicado». |
+| PG-04 | `PG-04_historial-pagos.png` | Historial por placa con un pago activo y otro anulado. |
+| PG-05 | `PG-05_entrada-vencida-acceso-pago.png` | Bloqueo por mensualidad vencida y enlace «Registrar pago de esta placa». |
+| PG-06 | `PG-06_aviso-dry-run.txt` | Salida del job con `--dry-run`: vencimiento objetivo y aviso pendiente, sin envío real. |
+
+Los casos `PG-*` se ejecutaron con Playwright. Las capturas son a nivel de página, sin la barra de direcciones del navegador: la ruta se identifica por el nombre del archivo y por la fila del Excel. El caso `PG-06` usa un archivo de texto por tratarse de salida de terminal, igual que `PE-01` a `PE-03`. Ninguna evidencia contiene contraseñas, tokens ni datos personales del destinatario.
 
 ## Cómo capturar
 
@@ -124,8 +132,8 @@ Las columnas **H a M** se llenan en el momento de la ejecución, no después: es
 
 ## En el cierre de esta entrega:
 
-- Los 33 casos tienen archivo de evidencia existente en esta carpeta.
+- Los 39 casos tienen archivo de evidencia existente en esta carpeta.
 - Cada fila de la hoja `Casos` tiene las columnas H a M completas.
-- Los casos de error muestran el mensaje exacto que aparece en el documento del sistema, §7.4 Mensajes de error.
-- La hoja `Plan` refleja el avance real (aprobados, fallidos, pendientes y porcentaje).
-- No hay contraseñas, tokens ni hashes visibles en ninguna captura.
+- Los casos de error muestran el mensaje exacto que aparece en el documento del sistema.
+- La hoja `Plan` refleja el avance real: 39 aprobados, 0 fallidos y 100 % de ejecución.
+- No hay contraseñas, tokens, hashes ni correos personales visibles en ninguna evidencia.
